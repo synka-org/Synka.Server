@@ -1,0 +1,52 @@
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Documentation
+README.md
+SECURITY.md
+*.md
+
+# Build outputs
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+
+# IDE and editor folders
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Test results
+**/TestResults/
+**/*.trx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development files
+**/*.local.*
+**/appsettings.Development.json
+
+# Database files
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Logs
+**/logs/
+**/*.log
+
+# Temporary files
+**/tmp/
+**/temp/
