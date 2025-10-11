@@ -1,4 +1,4 @@
-﻿namespace Synka.Server.Services;
+namespace Synka.Server.Services;
 
 public interface IConfigurationStateService
 {

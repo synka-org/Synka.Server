@@ -1,4 +1,4 @@
-﻿using Synka.Server.Contracts;
+using Synka.Server.Contracts;
 
 namespace Synka.Server.Services;
 
