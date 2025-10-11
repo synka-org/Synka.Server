@@ -1,0 +1,11 @@
+@SynkaServerHostAddress = http://localhost:5013
+
+GET {{SynkaServerHostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{SynkaServerHostAddress}}/openapi.json
+Accept: application/json
+
+###

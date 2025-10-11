@@ -1,0 +1,7 @@
+# EditorConfig overrides for test projects
+
+root = false
+
+[*.cs]
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA2234.severity = none
