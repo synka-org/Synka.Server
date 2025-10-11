@@ -79,17 +79,21 @@ dotnet tool run dotnet-ef database update
 - Target .NET 10 (per `global.json`)
 
 **Git conventions:**
-- Conventional Commits: `feat:`, `fix:`, `docs:`, `ci:`, `test:`, etc.
-- Branch naming: `feat/...`, `fix/...`, `ci/...`, `docs/...`
-- **CRITICAL: Branch workflow** (NEVER skip these steps):
+- Conventional Commits: `feat:`, `fix:`, `docs:`, `ci:`, `test:`, `style:`, etc.
+- Branch naming: `feat/...`, `fix/...`, `ci/...`, `docs/...`, `style/...`
+- **🚨 CRITICAL: Branch workflow** (NEVER skip these steps):
   1. `git checkout main` — switch to main branch
   2. `git pull origin main` — get latest changes
   3. `git checkout -b <type>/<description>` — create new branch from updated main
   4. Make your changes and commit
   5. `git push -u origin <branch-name>` — push branch
   6. Create PR via GitHub
-  - **NEVER commit new features/changes to an existing feature branch**
-  - **ALWAYS create a new branch from updated main for each distinct change**
+  
+  **🛑 ABSOLUTE RULES:**
+  - **NEVER COMMIT DIRECTLY TO MAIN** — All changes MUST go through PRs
+  - **NEVER commit to an existing feature branch** — Each change needs its own branch
+  - **ALWAYS create a new branch from updated main** — Ensures clean git history
+  - **ALWAYS verify current branch before committing** — Use `git branch --show-current`
 
 **Documentation:**
 - Update tests when endpoint behavior changes
