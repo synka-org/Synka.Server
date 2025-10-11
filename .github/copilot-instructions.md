@@ -99,6 +99,20 @@ dotnet ef migrations remove
 - Remove unused usings
 - Target .NET 10 (per `global.json`)
 
+**🚨 CRITICAL: Pre-commit validation** (ALWAYS run before committing):
+```bash
+# Verify code formatting
+dotnet format --verify-no-changes --verbosity diagnostic
+
+# Verify analyzer rules
+dotnet format analyzers --verify-no-changes --verbosity diagnostic
+```
+**If either command fails:**
+1. Run `dotnet format` to fix formatting issues
+2. Run `dotnet format analyzers` to fix analyzer violations
+3. Review changes and stage fixed files
+4. Re-run verification commands before committing
+
 **Git conventions:**
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `ci:`, `test:`, `style:`, etc.
 - Branch naming: `feat/...`, `fix/...`, `ci/...`, `docs/...`, `style/...`
