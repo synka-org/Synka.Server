@@ -2,13 +2,27 @@
 
 This solution hosts the Synka ASP.NET Core backend targeting .NET 10.0. It ships with a SQLite-first configuration while keeping PostgreSQL fully supported so deployments can switch providers using environment variables.
 
-## Prerequisites
+---
+
+## 🐳 Docker deployment (home lab)
+
+Run Synka in a container with a single command:
+
+```bash
+docker run --rm -p 8080:80 ghcr.io/synka-org/synka
+```
+
+Point your browser at `http://localhost:8080`.
+
+---
+
+## 🛠️ Developer Prerequisites
 
 - [.NET SDK 10.0.100-rc.1](https://dotnet.microsoft.com/download) (matching `global.json`)
 - SQLite 3 (bundled via EF Core provider)
 - Optional: PostgreSQL 16+ for production parity
 
-## Getting started
+## 🚀 Getting started
 
 ```bash
 # Restore dependencies
@@ -28,7 +42,7 @@ The API exposes:
 - Identity API endpoints (register/login/token management) under `/auth/*`
 - OpenAPI metadata at `/openapi.json` while running in `Development` or when `OpenApi__Expose=true`
 
-## Database configuration
+## 🗄️ Database configuration
 
 By default, the application reads the following configuration from `appsettings.json`:
 
@@ -53,7 +67,7 @@ export ConnectionStrings__Postgres="Host=postgres;Port=5432;Database=synka;Usern
 
 Entity Framework Core 10 packages for both SQLite and PostgreSQL are pre-installed. The repository also bundles a [local tool manifest](./dotnet-tools.json) so you can run migration commands with `dotnet tool restore && dotnet tool run dotnet-ef`. Generate migrations inside `src/Synka.Server/Data/Migrations` as the model evolves.
 
-## Authentication
+## 🔐 Authentication
 
 The backend ships with ASP.NET Core Identity using Entity Framework Core stores:
 
