@@ -110,5 +110,6 @@ internal static class WebApplicationBuilderExtensions
     public static void AddSynkaApplicationServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<IConfigurationStateService, ConfigurationStateService>();
+        builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
     }
 }
