@@ -1,0 +1,190 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Run at 03:00 UTC every day (1 hour after Synka.Web nightly)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      web_release:
+        description: 'Synka.Web release tag to use (default: nightly)'
+        required: false
+        default: 'nightly'
+      web_repo:
+        description: 'Synka.Web repository (default: Synka.Web)'
+        required: false
+        default: 'Synka.Web'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-nightly:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate version info
+        id: version
+        run: |
+          echo "date=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
+          echo "datetime=$(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=nightly
+            type=raw,value=nightly-${{ steps.version.outputs.date }}
+
+      - name: Build and push nightly Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            WEB_REPO=${{ inputs.web_repo || 'synka-org/Synka.Web' }}
+            WEB_RELEASE=${{ inputs.web_release || 'nightly' }}
+            WEB_ASSET=${{ inputs.web_release == 'nightly' && 'synka-web-nightly.tar.gz' || 'synka-web.tar.gz' }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Create release notes
+        id: notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          # Synka Nightly Build
+
+          **Automated nightly build combining Synka.Server backend with Synka.Web frontend.**
+
+          ## Build Information
+
+          - **Build date:** ${{ steps.version.outputs.datetime }}
+          - **Server commit:** ${{ steps.version.outputs.sha_short }} (${{ steps.version.outputs.sha }})
+          - **Frontend source:** Synka.Web nightly release
+          - **Frontend repository:** ${{ inputs.web_repo || 'Synka.Web' }}
+          - **Frontend release:** ${{ inputs.web_release || 'nightly' }}
+
+          ## Docker Images
+
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly`
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly-${{ steps.version.outputs.date }}`
+
+          ## Usage
+
+          ### Quick Start
+
+          ```bash
+          docker run -d \
+            -p 8080:8080 \
+            -v synka-data:/app/data \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly
+          ```
+
+          ### Docker Compose
+
+          ```yaml
+          services:
+            synka:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly
+              ports:
+                - "8080:8080"
+              volumes:
+                - synka-data:/app/data
+              restart: unless-stopped
+
+          volumes:
+            synka-data:
+          ```
+
+          ## ⚠️ Warning
+
+          This is an **unstable pre-release** for testing purposes only.
+          
+          - Not recommended for production use
+          - May contain bugs or incomplete features
+          - Breaking changes may occur without notice
+          - Database migrations may not be reversible
+
+          For production deployments, use the latest stable release.
+
+          ## Configuration
+
+          ### Environment Variables
+
+          | Variable | Default | Description |
+          |----------|---------|-------------|
+          | `Database__Provider` | `Sqlite` | Database provider (`Sqlite` or `Postgres`) |
+          | `ConnectionStrings__Sqlite` | `Data Source=/app/data/synka.db` | SQLite connection |
+          | `ConnectionStrings__Postgres` | - | PostgreSQL connection string |
+
+          ### Example with PostgreSQL
+
+          ```bash
+          docker run -d \
+            -p 8080:8080 \
+            -e Database__Provider=Postgres \
+            -e ConnectionStrings__Postgres="Host=postgres;Database=synka;Username=synka;Password=secret" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly
+          ```
+
+          ## Feedback
+
+          Please report issues or provide feedback on the [GitHub repository](${{ github.server_url }}/${{ github.repository }}).
+          EOF
+
+      - name: Delete existing nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nightly --yes || true
+          git push origin :refs/tags/nightly || true
+
+      - name: Create nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create nightly \
+            --title "Nightly Build (${{ steps.version.outputs.datetime }})" \
+            --notes-file release-notes.md \
+            --prerelease \
+            --latest=false
+
+      - name: Cleanup old nightly images
+        continue-on-error: true
+        run: |
+          # Keep only the last 7 nightly dated tags
+          # This requires additional setup with GitHub API tokens
+          echo "Manual cleanup of old nightly images recommended"
