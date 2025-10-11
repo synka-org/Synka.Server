@@ -240,3 +240,10 @@ roslynator_use_var_instead_of_implicit_object_creation = true
 roslynator_use_var = always
 roslynator_configure_await = true
 roslynator_null_check_style = pattern_matching
+
+# Generated code: Migrations
+[**/Data/Migrations/*.cs]
+# Suppress analyzer warnings on EF Core generated migrations
+dotnet_diagnostic.CA1062.severity = none  # Don't require null checks in generated code
+dotnet_diagnostic.RCS1021.severity = none # Expression-bodied lambda not required in migrations
+generated_code = true

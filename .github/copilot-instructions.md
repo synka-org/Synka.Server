@@ -65,11 +65,32 @@ dotnet run --project src/Synka.Server  # Listens on 8080/HTTPS
 - Run: `dotnet test`
 
 **EF Migrations:**
+
+Migrations are stored in `src/Synka.Server/Data/Migrations/` and applied automatically on app start via `EnsureDatabaseIsMigrated()`.
+
 ```bash
+# Restore EF Core tools
 dotnet tool restore
-dotnet tool run dotnet-ef migrations add <Name> --project src/Synka.Server
-dotnet tool run dotnet-ef database update
+
+# Create a new migration (run from project directory)
+cd src/Synka.Server
+dotnet ef migrations add <MigrationName> --output-dir Data/Migrations
+
+# Or from repository root:
+dotnet ef migrations add <MigrationName> --project src/Synka.Server --output-dir Data/Migrations
+
+# Apply migrations to database (usually automatic via app startup)
+dotnet ef database update --project src/Synka.Server
+
+# Remove last migration (if not yet applied)
+cd src/Synka.Server
+dotnet ef migrations remove
 ```
+
+**Migration naming conventions:**
+- Use PascalCase: `AddUserPreferences`, `UpdateProductSchema`
+- Be descriptive: what changed, not how
+- Avoid generic names like `Update1` or `Changes`
 
 ## Quality Gates
 
