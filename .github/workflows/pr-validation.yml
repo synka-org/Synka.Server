@@ -24,10 +24,10 @@ jobs:
       run: dotnet restore Synka.slnx
       
     - name: Build
-      run: dotnet build src/Synka.Server/Synka.Server.csproj --no-restore --configuration Release
+      run: dotnet build Synka.slnx --no-restore --configuration Release
       
     - name: Run tests
-      run: dotnet test tests/Synka.Server.Tests/Synka.Server.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      run: dotnet test Synka.slnx --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
       
     - name: Publish test results
       uses: dorny/test-reporter@v1
