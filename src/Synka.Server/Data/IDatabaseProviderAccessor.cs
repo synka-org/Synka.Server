@@ -1,4 +1,4 @@
-namespace Synka.Server.Data;
+﻿namespace Synka.Server.Data;
 
 internal interface IDatabaseProviderAccessor
 {
