@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Synka.Server.Contracts;
 using Synka.Server.Tests.Infrastructure;

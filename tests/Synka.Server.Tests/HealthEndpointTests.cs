@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;

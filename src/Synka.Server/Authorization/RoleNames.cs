@@ -1,4 +1,4 @@
-﻿namespace Synka.Server.Authorization;
+namespace Synka.Server.Authorization;
 
 public static class RoleNames
 {

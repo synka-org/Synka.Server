@@ -1,4 +1,4 @@
-﻿using Synka.Server.Extensions;
+using Synka.Server.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
