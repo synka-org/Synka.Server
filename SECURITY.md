@@ -27,7 +27,7 @@ If you discover a security vulnerability in Synka.Server, please report it to us
 ### What to Expect
 
 - **Acknowledgment**: We will acknowledge receipt of your report within 7 days
-- **Assessment**: We will investigate and assess the severity within 14 days
+- **Assessment**: We will investigate and assess the severity within 30 days
 - **Updates**: We will keep you informed about our progress
 - **Fix**: We will work on a fix and aim to release a patch as soon as possible
 - **Credit**: We will credit you in the security advisory (unless you prefer to remain anonymous)
