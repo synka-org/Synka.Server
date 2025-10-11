@@ -30,7 +30,7 @@ internal sealed class ManifestEndpointTests
         await Assert.That(response.StatusCode)
             .IsEqualTo(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ServiceManifest>();
+        var payload = await response.Content.ReadFromJsonAsync<ServiceManifestResponse>();
 
         await Assert.That(payload).IsNotNull();
         await Assert.That(payload!.Service).IsEqualTo("Synka.Server");

@@ -1,37 +1,88 @@
-# Synka Backend AI agent guide
+# Synka Backend AI Agent Guide
 
-## Big picture
+## Overview
 
-- Use ASP.NET Core to expose storage, sync, and authentication APIs consumed by Synka Web.
-- SQLite is the default datastore, but keep PostgreSQL fully supported; surface connection strings via environment variables so container deployments (`ghcr.io/synka-org/synka`) stay drop-in.
+Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and health endpoints. Keep `Program.cs` lean—route all setup through extension helpers in `Extensions/`.
 
-## Runtimes & tooling
+**Tech stack:**
+- ASP.NET Identity + EF Core for authentication
+- SQLite (default) or PostgreSQL via `DatabaseProviderAccessor` (controlled by `Database__Provider` env var)
+- Minimal APIs with extension-based bootstrap pattern
 
-- Target .NET 10 preview. Use the `dotnet` CLI (`dotnet new`, `dotnet restore`, `dotnet run --project src/Synka.Server`). Prefer nullable reference types, async I/O, and minimal APIs/controllers where appropriate.
-- When you need official Microsoft/Azure references (ASP.NET Core, EF Core, Azure storage, etc.), call the Microsoft Learn MCP: start with `microsoft_docs_search`, fetch the full article with `microsoft_docs_fetch`, and grab vetted snippets via `microsoft_code_sample_search`.
+## Architecture & Patterns
 
-## Project conventions
+### Extension-based bootstrap
+- **Service registration** (`WebApplicationBuilderExtensions`):
+  - `AddSynkaCoreServices` → ProblemDetails, OpenAPI, authorization policies
+  - `AddSynkaDatabase` → provider-aware DbContext (SQLite/PostgreSQL)
+  - `AddSynkaAuthentication` → Identity API + optional OIDC
+  - `AddSynkaApplicationServices` → domain services (`ConfigurationService`, `ConfigurationStateService`)
 
-- Structure the server with folders such as `Controllers/`, `Services/`, `Data/`, and `Contracts/` inside `src/Synka.Server`.
-- Keep interfaces and their implementations in separate files—one type per file keeps diffs tight and satisfies analyzers.
-- When adding new classes, prefer C# primary constructors to wire dependencies instead of manual fields/constructors when practical.
-- Keep configuration in `appsettings*.json` and wire secrets through environment variables (remember Docker/Kubernetes compatibility).
-- Maintain DTO parity with the frontend by generating TypeScript clients from C# OpenAPI documents whenever endpoints change.
+- **Runtime wiring** (`WebApplicationExtensions`):
+  - `MapOpenApiDocument` → dev-only unless `OpenApi__Expose=true`
+  - `EnsureDatabaseIsMigrated` → apply EF migrations on start
+  - `MapAuthenticationEndpoints` → Identity API with admin-only `/auth/register`
+  - `MapServiceManifestEndpoint` → root service manifest
+  - `MapConfigurationEndpoint` → initial/required configuration endpoint
 
-## Integration hints
+### Separation of concerns
+- **Endpoint handlers MUST be lightweight**—business logic belongs in `Services/`. Handlers only orchestrate service calls and map results to HTTP responses.
+- **DTOs** live in `Contracts/` with `Request`/`Response` suffixes (e.g., `ConfigurationRequest`, `ServiceManifestResponse`)
+- **Entities** live in `Data/Entities/` (e.g., `ApplicationUserEntity`)
+- **Services** use primary constructors and access constructor parameters directly without creating private fields:
+  ```csharp
+  public sealed class MyService(IDependency dependency) : IMyService
+  {
+      // Use 'dependency' directly, no private fields needed
+      public Task DoWork() => dependency.PerformAsync();
+  }
+  ```
 
-- Expose REST endpoints that default to port 8080 so existing Docker and frontend tooling keep working.
-- Use EF Core migrations under `src/Synka.Server/Migrations` when modelling database changes.
-- Authentication/authorisation should build on ASP.NET Identity to support sharing and permissions scenarios.
+### Authorization
+- Admin-only endpoints use `AuthorizationPolicies.AdministratorOnly`
+- Registration endpoint (`/auth/register`) is admin-only
+- Fallback policy requires authenticated users unless explicitly marked `AllowAnonymous`
 
-## Testing & quality
+## Configuration & Integrations
 
-- Co-locate backend unit tests under `tests/` mirroring `src/` namespaces. Execute them with `dotnet test`.
-- Provide integration tests or contract tests whenever you adjust public APIs consumed by the Angular client.
-- Structure all test cases using the Arrange-Act-Assert pattern with explicit sections or comments that make each phase obvious.
-- Update `README.md` whenever new commands, migrations, or configuration knobs are introduced.
+- **Database**: `appsettings.json` defines SQLite and Postgres connection strings; `Database:Provider` selects one
+- **OIDC**: Federation enabled when `Authentication:OIDC:Authority` is set; configure scopes and callback path
+- **OpenAPI**: Exposed in dev by default; set `OpenApi__Expose=true` for production
 
-## Workflow tips
+## Developer Workflow
 
-- Run `dotnet build src/Synka.Server` before opening PRs.
-- After every file edit, ensure formatting stays clean.
+**Build & run:**
+```bash
+dotnet restore Synka.slnx
+dotnet build src/Synka.Server
+dotnet run --project src/Synka.Server  # Listens on 8080/HTTPS
+```
+
+**Testing:**
+- Tests in `tests/Synka.Server.Tests` use TUnit + `WebApplicationFactory<Program>`
+- Follow AAA structure (`// Arrange // Act // Assert`)
+- For authenticated tests, extend `AuthenticatedSchemeWebApplicationFactory` or use `TestAuthHandler`
+- Run: `dotnet test`
+
+**EF Migrations:**
+```bash
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add <Name> --project src/Synka.Server
+dotnet tool run dotnet-ef database update
+```
+
+## Quality Gates
+
+**Code quality:**
+- Roslynator analyzers enforced; run `dotnet format analyzers` before committing
+- Remove unused usings
+- Target .NET 10 (per `global.json`)
+
+**Git conventions:**
+- Conventional Commits: `feat:`, `fix:`, `docs:`, etc.
+- Branch naming: `feat/...`, `fix/...`
+
+**Documentation:**
+- Update tests when endpoint behavior changes
+- Document new config in `README.md`
+- Keep OpenAPI exposure rules accurate

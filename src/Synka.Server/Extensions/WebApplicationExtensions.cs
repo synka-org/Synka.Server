@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Authorization;
 using Synka.Server.Contracts;
@@ -56,16 +58,23 @@ internal static class WebApplicationExtensions
 
     public static void MapServiceManifestEndpoint(this WebApplication app)
     {
-        app.MapGet("/", async (IConfigurationStateService configurationStateService, CancellationToken cancellationToken) =>
-            {
-                var requiresConfiguration = await configurationStateService.RequiresConfigurationAsync(cancellationToken);
-
-                return TypedResults.Ok(new ServiceManifest(
-                    Service: "Synka.Server",
-                    Version: typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
-                    RequiresConfiguration: requiresConfiguration));
-            })
+        app.MapGet("/", async (
+            IConfigurationStateService configurationStateService,
+            CancellationToken cancellationToken) =>
+            await configurationStateService.GetServiceManifestAsync(cancellationToken))
             .WithName("GetServiceManifest")
+            .AllowAnonymous();
+    }
+
+    public static void MapConfigurationEndpoint(this WebApplication app)
+    {
+        app.MapPost("/configure", async (
+            ConfigurationRequest request,
+            IConfigurationService configurationService,
+            CancellationToken cancellationToken) =>
+            await configurationService.ConfigureAsync(request, cancellationToken))
+            .WithName("Configuration")
+            .WithTags("Configuration")
             .AllowAnonymous();
     }
 }

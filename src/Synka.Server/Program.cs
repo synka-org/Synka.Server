@@ -22,6 +22,7 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapAuthenticationEndpoints();
 app.MapServiceManifestEndpoint();
+app.MapConfigurationEndpoint();
 
 app.Run();
 
