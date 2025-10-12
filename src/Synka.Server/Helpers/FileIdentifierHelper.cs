@@ -6,31 +6,46 @@ namespace Synka.Server.Helpers;
 public static class FileIdentifierHelper
 {
     /// <summary>
-    /// Gets a platform-appropriate file identifier.
+    /// Tries to get a platform-appropriate file identifier.
     /// </summary>
     /// <param name="path">Path to the file.</param>
-    /// <returns>A unique file identifier.</returns>
-    public static ulong GetFileId(string path)
+    /// <param name="fileId">When this method returns, contains the file identifier if successful; otherwise, 0.</param>
+    /// <returns>true if the file identifier was successfully retrieved; otherwise, false.</returns>
+    public static bool TryGetFileId(string path, out ulong fileId)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        try
         {
-            return GetWindowsFileId(path);
-        }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                fileId = GetWindowsFileId(path);
+                return true;
+            }
 
-        return GetUnixInode(path);
+            fileId = GetUnixInode(path);
+            return true;
+        }
+#pragma warning disable CA1031 // Catch specific exceptions - intentionally catching all for Try pattern
+        catch
+        {
+            fileId = 0;
+            return false;
+        }
+#pragma warning restore CA1031
     }
 
     /// <summary>
-    /// Gets a Windows file identifier (volume serial + file index) as a formatted string.
-    /// Returns null if not running on Windows or if an error occurs.
+    /// Tries to get a Windows file identifier (volume serial + file index) as a formatted string.
     /// </summary>
     /// <param name="path">Path to the file.</param>
-    /// <returns>A formatted file identifier string, or null if unavailable.</returns>
-    public static string? TryGetWindowsFileId(string path)
+    /// <param name="fileId">When this method returns, contains the formatted file identifier if successful; otherwise, null.</param>
+    /// <returns>true if running on Windows and the file identifier was successfully retrieved; otherwise, false.</returns>
+    public static bool TryGetWindowsFileId(string path, out string? fileId)
     {
+        fileId = null;
+
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return null;
+            return false;
         }
 
         try
@@ -40,31 +55,34 @@ public static class FileIdentifierHelper
 
             if (!GetFileInformationByHandle(handle, out info))
             {
-                return null;
+                return false;
             }
 
             // Format as "VolumeSerial:FileIndexHigh:FileIndexLow"
-            return $"{info.dwVolumeSerialNumber:X8}:{info.nFileIndexHigh:X8}:{info.nFileIndexLow:X8}";
+            fileId = $"{info.dwVolumeSerialNumber:X8}:{info.nFileIndexHigh:X8}:{info.nFileIndexLow:X8}";
+            return true;
         }
 #pragma warning disable CA1031 // Catch specific exceptions - intentionally catching all for Try pattern
         catch
         {
-            return null;
+            return false;
         }
 #pragma warning restore CA1031
     }
 
     /// <summary>
-    /// Gets a Unix file identifier (device + inode) as a formatted string.
-    /// Returns null if not running on Unix or if an error occurs.
+    /// Tries to get a Unix file identifier (device + inode) as a formatted string.
     /// </summary>
     /// <param name="path">Path to the file.</param>
-    /// <returns>A formatted file identifier string, or null if unavailable.</returns>
-    public static string? TryGetUnixFileId(string path)
+    /// <param name="fileId">When this method returns, contains the formatted file identifier if successful; otherwise, null.</param>
+    /// <returns>true if running on Unix and the file identifier was successfully retrieved; otherwise, false.</returns>
+    public static bool TryGetUnixFileId(string path, out string? fileId)
     {
+        fileId = null;
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return null;
+            return false;
         }
 
         try
@@ -72,16 +90,17 @@ public static class FileIdentifierHelper
             var stat = new Stat();
             if (stat64(path, out stat) != 0)
             {
-                return null;
+                return false;
             }
 
             // Format as "Device:Inode"
-            return $"{stat.st_dev:X}:{stat.st_ino:X}";
+            fileId = $"{stat.st_dev:X}:{stat.st_ino:X}";
+            return true;
         }
 #pragma warning disable CA1031 // Catch specific exceptions - intentionally catching all for Try pattern
         catch
         {
-            return null;
+            return false;
         }
 #pragma warning restore CA1031
     }

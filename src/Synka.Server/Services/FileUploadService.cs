@@ -77,7 +77,7 @@ public sealed class FileUploadService(
                     await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                     hashAlgorithm.TransformBlock(buffer, 0, bytesRead, null, 0);
                 }
-                hashAlgorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                hashAlgorithm.TransformFinalBlock([], 0, 0);
 
                 if (hashAlgorithm.Hash is not null)
                 {
@@ -86,8 +86,8 @@ public sealed class FileUploadService(
             }
 
             // Get platform-specific file identifiers
-            windowsFileId = FileIdentifierHelper.TryGetWindowsFileId(storagePath);
-            unixFileId = FileIdentifierHelper.TryGetUnixFileId(storagePath);
+            FileIdentifierHelper.TryGetWindowsFileId(storagePath, out windowsFileId);
+            FileIdentifierHelper.TryGetUnixFileId(storagePath, out unixFileId);
 
             // Store metadata in database
             var metadata = new FileMetadataEntity
@@ -127,12 +127,10 @@ public sealed class FileUploadService(
                 {
                     File.Delete(storagePath);
                 }
-#pragma warning disable CA1031 // Catch specific exception - logging cleanup failure
                 catch (Exception ex)
                 {
                     FileUploadServiceLoggers.LogDeleteFileFailed(logger, storagePath, ex);
                 }
-#pragma warning restore CA1031
             }
 
             throw;
