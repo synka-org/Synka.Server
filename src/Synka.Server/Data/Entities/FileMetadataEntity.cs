@@ -1,7 +1,7 @@
 namespace Synka.Server.Data.Entities;
 
 /// <summary>
-/// Represents file metadata with platform-specific identifiers for tracking files even when moved.
+/// Represents file metadata within a folder.
 /// </summary>
 public class FileMetadataEntity
 {
@@ -13,12 +13,22 @@ public class FileMetadataEntity
     /// <summary>
     /// The user who uploaded the file.
     /// </summary>
-    public Guid UserId { get; set; }
+    public Guid UploadedById { get; set; }
 
     /// <summary>
-    /// Navigation property to the user.
+    /// Navigation property to the uploading user.
     /// </summary>
-    public ApplicationUserEntity User { get; set; } = null!;
+    public ApplicationUserEntity UploadedBy { get; set; } = null!;
+
+    /// <summary>
+    /// The folder containing this file.
+    /// </summary>
+    public Guid FolderId { get; set; }
+
+    /// <summary>
+    /// Navigation property to the folder.
+    /// </summary>
+    public FolderEntity Folder { get; set; } = null!;
 
     /// <summary>
     /// Original filename.
@@ -36,7 +46,7 @@ public class FileMetadataEntity
     public long SizeBytes { get; set; }
 
     /// <summary>
-    /// Current storage path on disk.
+    /// Storage path relative to folder's PhysicalPath.
     /// </summary>
     public string StoragePath { get; set; } = string.Empty;
 
@@ -44,6 +54,11 @@ public class FileMetadataEntity
     /// SHA-256 hash of file content for deduplication.
     /// </summary>
     public string? ContentHash { get; set; }
+
+    /// <summary>
+    /// True if file was deleted from disk but kept in DB for potential restoration.
+    /// </summary>
+    public bool IsDeleted { get; set; }
 
     /// <summary>
     /// When the file was uploaded.
