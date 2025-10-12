@@ -10,6 +10,9 @@ namespace Synka.Server.Services;
 /// <summary>
 /// Service for handling file uploads with metadata tracking using platform-specific file identifiers.
 /// </summary>
+/// <param name="dbContext">Database context.</param>
+/// <param name="configuration">Application configuration.</param>
+/// <param name="logger">Logger instance.</param>
 public sealed class FileUploadService(
     SynkaDbContext dbContext,
     IConfiguration configuration,
@@ -21,6 +24,37 @@ public sealed class FileUploadService(
     private const long MaxFileSizeBytes = 100 * 1024 * 1024;
     private readonly string _uploadDirectory = configuration.GetValue<string>("FileUpload:Directory") ?? Path.Combine(Directory.GetCurrentDirectory(), "uploads");
 
+    private static readonly Action<ILogger, Guid, string, long, Guid, Exception?> LogFileUploaded =
+        LoggerMessage.Define<Guid, string, long, Guid>(
+            LogLevel.Information,
+            new EventId(1, nameof(LogFileUploaded)),
+            "File uploaded - ID: {FileId}, Name: {FileName}, Size: {Size}, User: {UserId}");
+
+    private static readonly Action<ILogger, string, Exception?> LogDeleteFileFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(2, nameof(LogDeleteFileFailed)),
+            "Failed to delete file {Path} after upload failure");
+
+    private static readonly Action<ILogger, string, Guid, Exception?> LogFileDeleted =
+        LoggerMessage.Define<string, Guid>(
+            LogLevel.Information,
+            new EventId(3, nameof(LogFileDeleted)),
+            "Deleted file {Path} for file ID {FileId}");
+
+    private static readonly Action<ILogger, string, Guid, Exception?> LogDeleteFileForIdFailed =
+        LoggerMessage.Define<string, Guid>(
+            LogLevel.Warning,
+            new EventId(4, nameof(LogDeleteFileForIdFailed)),
+            "Failed to delete file {Path} for file ID {FileId}");
+
+    /// <summary>
+    /// Upload a file and store its metadata.
+    /// </summary>
+    /// <param name="userId">User ID of the uploader.</param>
+    /// <param name="file">File to upload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="ArgumentException">Thrown if file is empty or exceeds maximum allowed size.</exception>
     public async Task<FileUploadResponse> UploadFileAsync(
         Guid userId,
         IFormFile file,
@@ -97,12 +131,7 @@ public sealed class FileUploadService(
             dbContext.FileMetadata.Add(metadata);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            logger.LogInformation(
-                "File uploaded - ID: {FileId}, Name: {FileName}, Size: {Size}, User: {UserId}",
-                fileId,
-                file.FileName,
-                file.Length,
-                userId);
+            LogFileUploaded(logger, fileId, file.FileName, file.Length, userId, null);
 
             return new FileUploadResponse(
                 fileId,
@@ -125,7 +154,7 @@ public sealed class FileUploadService(
 #pragma warning disable CA1031 // Catch specific exception - logging cleanup failure
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "Failed to delete file {Path} after upload failure", storagePath);
+                    LogDeleteFileFailed(logger, storagePath, ex);
                 }
 #pragma warning restore CA1031
             }
@@ -135,6 +164,11 @@ public sealed class FileUploadService(
 #pragma warning restore CA1031
     }
 
+    /// <summary>
+    /// Get file metadata by ID.
+    /// </summary>
+    /// <param name="fileId">File ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<FileMetadataResponse?> GetFileMetadataAsync(
         Guid fileId,
         CancellationToken cancellationToken = default)
@@ -161,6 +195,11 @@ public sealed class FileUploadService(
             metadata.UpdatedAt);
     }
 
+    /// <summary>
+    /// List files for a user.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<IEnumerable<FileMetadataResponse>> ListUserFilesAsync(
         Guid userId,
         CancellationToken cancellationToken = default)
@@ -184,6 +223,12 @@ public sealed class FileUploadService(
             metadata.UpdatedAt));
     }
 
+    /// <summary>
+    /// Delete file and metadata.
+    /// </summary>
+    /// <param name="fileId">File ID.</param>
+    /// <param name="userId">User ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<bool> DeleteFileAsync(
         Guid fileId,
         Guid userId,
@@ -203,12 +248,12 @@ public sealed class FileUploadService(
             try
             {
                 File.Delete(metadata.StoragePath);
-                logger.LogInformation("Deleted file {Path} for file ID {FileId}", metadata.StoragePath, fileId);
+                LogFileDeleted(logger, metadata.StoragePath, fileId, null);
             }
 #pragma warning disable CA1031 // Catch specific exception - logging deletion failure
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to delete file {Path} for file ID {FileId}", metadata.StoragePath, fileId);
+                LogDeleteFileForIdFailed(logger, metadata.StoragePath, fileId, ex);
             }
 #pragma warning restore CA1031
         }
