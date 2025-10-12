@@ -19,10 +19,17 @@ app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Serve static files from wwwroot (Angular app)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapHealthChecks("/health");
 app.MapAuthenticationEndpoints();
 app.MapServiceManifestEndpoint();
 app.MapConfigurationEndpoint();
+
+// Fallback to index.html for Angular routing
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
