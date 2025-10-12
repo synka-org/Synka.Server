@@ -11,14 +11,14 @@ namespace Synka.Server.Tests;
 internal sealed class ManifestEndpointTests
 {
     [Test]
-    public async Task ApiManifest_ReturnsManifestPayload()
+    public async Task ApiV1Manifest_ReturnsManifestPayload()
     {
         // Arrange
         await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         // Act
-        var response = await client.GetAsync("/api/manifest");
+        var response = await client.GetAsync("/api/v1/manifest");
 
         // Assert
         await Assert.That(response.StatusCode)
