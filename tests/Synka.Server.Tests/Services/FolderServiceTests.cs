@@ -4,9 +4,6 @@ using Synka.Server.Data;
 using Synka.Server.Data.Entities;
 using Synka.Server.Services;
 using Synka.Server.Tests.Infrastructure;
-using TUnit.Assertions;
-using TUnit.Assertions.Extensions;
-using TUnit.Core;
 
 namespace Synka.Server.Tests.Services;
 
@@ -15,7 +12,7 @@ internal sealed class FolderServiceTests : IDisposable
     private readonly TestWebApplicationFactory _factory;
     private readonly IServiceScope _scope;
     private readonly SynkaDbContext _context;
-    private readonly IFolderService _folderService;
+    private readonly FolderService _folderService;
 
     public FolderServiceTests()
     {
@@ -33,6 +30,7 @@ internal sealed class FolderServiceTests : IDisposable
 
     public void Dispose()
     {
+        _context.Dispose();
         _scope.Dispose();
         _factory.Dispose();
     }

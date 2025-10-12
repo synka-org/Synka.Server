@@ -15,8 +15,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
     private readonly TestWebApplicationFactory _factory;
     private readonly IServiceScope _scope;
     private readonly SynkaDbContext _context;
-    private readonly IFolderService _folderService;
-    private readonly IFolderAccessService _accessService;
+    private readonly FolderService _folderService;
+    private readonly FolderAccessService _accessService;
 
     public FolderAccessServiceTests()
     {
@@ -35,6 +35,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
 
     public void Dispose()
     {
+        _context.Dispose();
         _scope.Dispose();
         _factory.Dispose();
     }
