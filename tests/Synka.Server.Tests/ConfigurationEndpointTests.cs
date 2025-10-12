@@ -143,7 +143,7 @@ internal sealed class ConfigurationEndpointTests
         await client.PostAsJsonAsync("/configure", request);
 
         // Act
-        var manifest = await client.GetFromJsonAsync<ServiceManifestResponse>("/api/manifest");
+        var manifest = await client.GetFromJsonAsync<ServiceManifestResponse>("/api/v1/manifest");
 
         // Assert
         await Assert.That(manifest).IsNotNull();

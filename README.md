@@ -136,11 +136,21 @@ Nightly builds run automatically every day at 03:00 UTC and are available as:
 The API exposes:
 
 - `GET /health` for health checks
-- `GET /api/manifest` returning a service manifest with configuration status
+- `GET /api/v1/manifest` returning a service manifest with configuration status
 - Identity API endpoints (register/login/token management) under `/auth/*`
 - OpenAPI metadata at `/openapi.json` while running in `Development` or when `OpenApi__Expose=true`
 
 The root path `/` serves the Angular frontend (when built with Docker).
+
+### API Versioning
+
+The API uses URL-based versioning with the format `/api/v{version}/...`. Current API version: **v1**
+
+Version can also be specified via the `X-Api-Version` header:
+
+```bash
+curl -H "X-Api-Version: 1.0" https://api.example.com/api/manifest
+```
 
 ## 🗄️ Database configuration
 
