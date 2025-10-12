@@ -43,12 +43,13 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         }
 
         // Check direct access grant
+        var now = DateTimeOffset.UtcNow;
         var directAccess = await context.FolderAccess
             .AsNoTracking()
             .Where(a =>
                 a.FolderId == folderId &&
                 a.UserId == userId &&
-                (a.ExpiresAt == null || a.ExpiresAt > DateTimeOffset.UtcNow))
+                (a.ExpiresAt == null || a.ExpiresAt > now))
             .Select(a => a.Permission)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -155,10 +156,12 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
+        var now = DateTimeOffset.UtcNow;
         return await context.FolderAccess
             .Include(a => a.User)
             .Include(a => a.GrantedBy)
-            .Where(a => a.FolderId == folderId)
+            .Where(a => a.FolderId == folderId &&
+                       (a.ExpiresAt == null || a.ExpiresAt > now))
             .OrderBy(a => a.User.UserName)
             .ToListAsync(cancellationToken);
     }
@@ -168,27 +171,35 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         FolderAccessLevel? minimumPermission = null,
         CancellationToken cancellationToken = default)
     {
+        var now = DateTimeOffset.UtcNow;
+
         // Get folders owned by user
         var ownedFolders = await context.Folders
             .Where(f => f.OwnerId == userId && !f.IsDeleted)
             .Select(f => f.Id)
             .ToListAsync(cancellationToken);
 
-        // Get folders shared with user
-        var sharedFolders = await context.FolderAccess
-            .Where(a =>
-                a.UserId == userId &&
-                (a.ExpiresAt == null || a.ExpiresAt > DateTimeOffset.UtcNow) &&
-                (minimumPermission == null || a.Permission >= minimumPermission))
-            .Select(a => a.FolderId)
+        // Get folders shared with user (split query for EF Core translation)
+        var sharedAccessGrants = await context.FolderAccess
+            .Where(a => a.UserId == userId &&
+                       (a.ExpiresAt == null || a.ExpiresAt > now))
+            .Select(a => new { a.FolderId, a.Permission })
             .ToListAsync(cancellationToken);
 
+        var sharedFolders = sharedAccessGrants
+            .Where(a => minimumPermission == null || a.Permission >= minimumPermission)
+            .Select(a => a.FolderId)
+            .ToList();
+
         // Get shared root folders (accessible to all)
-        var sharedRoots = await context.Folders
-            .Where(f => f.OwnerId == null && f.ParentFolderId == null && !f.IsDeleted &&
-                (minimumPermission == null || minimumPermission == FolderAccessLevel.Read))
-            .Select(f => f.Id)
-            .ToListAsync(cancellationToken);
+        List<Guid> sharedRoots = [];
+        if (minimumPermission == null || minimumPermission == FolderAccessLevel.Read)
+        {
+            sharedRoots = await context.Folders
+                .Where(f => f.OwnerId == null && f.ParentFolderId == null && !f.IsDeleted)
+                .Select(f => f.Id)
+                .ToListAsync(cancellationToken);
+        }
 
         return [.. ownedFolders, .. sharedFolders, .. sharedRoots];
     }
