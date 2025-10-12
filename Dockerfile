@@ -5,7 +5,6 @@
 # ============================================================================
 ARG WEB_REPO=synka-org/Synka.Web
 ARG WEB_RELEASE=nightly
-ARG WEB_ASSET=synka-web.tar.gz
 
 # ============================================================================
 # Stage 1: Download pre-built frontend release
@@ -14,11 +13,10 @@ FROM alpine:latest AS web-release
 
 ARG WEB_REPO
 ARG WEB_RELEASE
-ARG WEB_ASSET
 
 RUN apk add --no-cache wget && \
     wget -O synka-web.tar.gz \
-      "https://github.com/${WEB_REPO}/releases/download/${WEB_RELEASE}/${WEB_ASSET}" && \
+      "https://github.com/${WEB_REPO}/releases/download/${WEB_RELEASE}/synka-web-${WEB_RELEASE}.tar.gz" && \
     mkdir -p /web/dist/synka/browser && \
     tar -xzf synka-web.tar.gz -C /web/dist/synka/browser
 
