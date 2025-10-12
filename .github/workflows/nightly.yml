@@ -11,9 +11,9 @@ on:
         required: false
         default: 'nightly'
       web_repo:
-        description: 'Synka.Web repository (default: Synka.Web)'
+        description: 'Synka.Web repository (default: synka-org/Synka.Web)'
         required: false
-        default: 'Synka.Web'
+        default: 'synka-org/Synka.Web'
 
 env:
   REGISTRY: ghcr.io
@@ -72,7 +72,6 @@ jobs:
           build-args: |
             WEB_REPO=${{ inputs.web_repo || 'synka-org/Synka.Web' }}
             WEB_RELEASE=${{ inputs.web_release || 'nightly' }}
-            WEB_ASSET=${{ inputs.web_release == 'nightly' && 'synka-web-nightly.tar.gz' || 'synka-web.tar.gz' }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
@@ -94,7 +93,7 @@ jobs:
           - **Build date:** ${{ steps.version.outputs.datetime }}
           - **Server commit:** ${{ steps.version.outputs.sha_short }} (${{ steps.version.outputs.sha }})
           - **Frontend source:** Synka.Web nightly release
-          - **Frontend repository:** ${{ inputs.web_repo || 'Synka.Web' }}
+          - **Frontend repository:** ${{ inputs.web_repo || 'synka-org/Synka.Web' }}
           - **Frontend release:** ${{ inputs.web_release || 'nightly' }}
 
           ## Docker Images
