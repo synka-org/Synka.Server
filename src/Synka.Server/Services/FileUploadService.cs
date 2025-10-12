@@ -86,7 +86,7 @@ public sealed class FileUploadService(
             var metadata = new FileMetadataEntity
             {
                 Id = fileId,
-                UserId = userId,
+                UploadedById = userId,
                 FileName = file.FileName,
                 ContentType = file.ContentType,
                 SizeBytes = file.Length,
@@ -169,7 +169,7 @@ public sealed class FileUploadService(
     {
         var files = await dbContext.FileMetadata
             .AsNoTracking()
-            .Where(f => f.UserId == userId)
+            .Where(f => f.UploadedById == userId)
             .OrderByDescending(f => f.UploadedAt)
             .ToListAsync(cancellationToken);
 
@@ -196,7 +196,7 @@ public sealed class FileUploadService(
         CancellationToken cancellationToken = default)
     {
         var metadata = await dbContext.FileMetadata
-            .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId, cancellationToken);
+            .FirstOrDefaultAsync(f => f.Id == fileId && f.UploadedById == userId, cancellationToken);
 
         if (metadata is null)
         {
