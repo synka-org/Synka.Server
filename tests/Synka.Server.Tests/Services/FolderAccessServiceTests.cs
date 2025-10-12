@@ -96,7 +96,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         await _accessService.GrantAccessAsync(userId, parentFolder.Id, ownerId, FolderAccessLevel.Admin);
 
         // Act
-        var hasAccess = await _accessService.HasAccessAsync(childFolder.Id, userId, FolderAccessLevel.Read);
+    var hasAccess = await _accessService.HasAccessAsync(userId, childFolder.Id, FolderAccessLevel.Read);
 
         // Assert
         await Assert.That(hasAccess).IsTrue();

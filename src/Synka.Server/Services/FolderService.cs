@@ -118,15 +118,20 @@ public sealed class FolderService(SynkaDbContext context) : IFolderService
         // Get folders explicitly shared with user
         var now = DateTimeOffset.UtcNow;
         var sharedFolderIds = await context.FolderAccess
-            .Where(a => a.UserId == userId &&
-                       (a.ExpiresAt == null || a.ExpiresAt > now))
-            .Select(a => a.FolderId)
+            .AsNoTracking()
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.FolderId, a.ExpiresAt })
             .ToListAsync(cancellationToken);
+
+        var activeSharedFolderIds = sharedFolderIds
+            .Where(a => a.ExpiresAt is null || a.ExpiresAt.Value > now)
+            .Select(a => a.FolderId)
+            .ToList();
 
         var sharedFolders = await context.Folders
             .Where(f => !f.IsDeleted &&
                        f.ParentFolderId == parentFolderId &&
-                       sharedFolderIds.Contains(f.Id))
+                       activeSharedFolderIds.Contains(f.Id))
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
 

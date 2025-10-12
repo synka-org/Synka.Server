@@ -44,18 +44,18 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
 
         // Check direct access grant
         var now = DateTimeOffset.UtcNow;
-        var directAccess = await context.FolderAccess
+        var directGrants = await context.FolderAccess
             .AsNoTracking()
-            .Where(a =>
-                a.FolderId == folderId &&
-                a.UserId == userId &&
-                (a.ExpiresAt == null || a.ExpiresAt > now))
-            .Select(a => a.Permission)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Where(a => a.FolderId == folderId && a.UserId == userId)
+            .ToListAsync(cancellationToken);
 
-        if (directAccess != default)
+        var directAccess = directGrants
+            .FirstOrDefault(grant => GrantIsActive(grant, now))?
+            .Permission;
+
+        if (directAccess.HasValue)
         {
-            return directAccess;
+            return directAccess.Value;
         }
 
         // Check inherited access from parent folders
@@ -112,8 +112,8 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
             ExpiresAt = expiresAt
         };
 
-        context.FolderAccess.Add(access);
-        await context.SaveChangesAsync(cancellationToken);
+    context.FolderAccess.Add(access);
+    await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateAccessAsync(
@@ -157,13 +157,57 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        return await context.FolderAccess
-            .Include(a => a.User)
-            .Include(a => a.GrantedBy)
-            .Where(a => a.FolderId == folderId &&
-                       (a.ExpiresAt == null || a.ExpiresAt > now))
-            .OrderBy(a => a.User.UserName)
+        var grants = await context.FolderAccess
+            .AsNoTracking()
+            .Where(a => a.FolderId == folderId)
             .ToListAsync(cancellationToken);
+
+        if (grants.Count == 0)
+        {
+            return [];
+        }
+
+        var userIds = grants
+            .Select(grant => grant.UserId)
+            .Distinct()
+            .ToList();
+
+        var users = userIds.Count == 0
+            ? new Dictionary<Guid, ApplicationUserEntity>()
+            : await context.Users
+                .AsNoTracking()
+                .Where(user => userIds.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id, cancellationToken);
+
+        var grantorIds = grants
+            .Select(grant => grant.GrantedById)
+            .Distinct()
+            .ToList();
+
+        var grantors = grantorIds.Count == 0
+            ? new Dictionary<Guid, ApplicationUserEntity>()
+            : await context.Users
+                .AsNoTracking()
+                .Where(user => grantorIds.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id, cancellationToken);
+
+        foreach (var grant in grants)
+        {
+            if (users.TryGetValue(grant.UserId, out var user))
+            {
+                grant.User = user;
+            }
+
+            if (grantors.TryGetValue(grant.GrantedById, out var grantor))
+            {
+                grant.GrantedBy = grantor;
+            }
+        }
+
+        return grants
+            .Where(grant => GrantIsActive(grant, now))
+            .OrderBy(grant => grant.User?.UserName ?? string.Empty)
+            .ToList();
     }
 
     public async Task<IReadOnlyList<Guid>> GetAccessibleFolderIdsAsync(
@@ -181,13 +225,14 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
 
         // Get folders shared with user (split query for EF Core translation)
         var sharedAccessGrants = await context.FolderAccess
-            .Where(a => a.UserId == userId &&
-                       (a.ExpiresAt == null || a.ExpiresAt > now))
-            .Select(a => new { a.FolderId, a.Permission })
+            .AsNoTracking()
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.FolderId, a.Permission, a.ExpiresAt })
             .ToListAsync(cancellationToken);
 
         var sharedFolders = sharedAccessGrants
-            .Where(a => minimumPermission == null || a.Permission >= minimumPermission)
+            .Where(a => GrantIsActive(a.ExpiresAt, now) &&
+                        (minimumPermission == null || a.Permission >= minimumPermission))
             .Select(a => a.FolderId)
             .ToList();
 
@@ -201,7 +246,11 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
                 .ToListAsync(cancellationToken);
         }
 
-        return [.. ownedFolders, .. sharedFolders, .. sharedRoots];
+        return ownedFolders
+            .Concat(sharedFolders)
+            .Concat(sharedRoots)
+            .Distinct()
+            .ToList();
     }
 
     private async Task<FolderAccessLevel?> GetInheritedPermissionAsync(
@@ -217,4 +266,10 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         // Recursively check parent folder permission
         return await GetEffectivePermissionAsync(userId, parentFolderId.Value, cancellationToken);
     }
+
+    private static bool GrantIsActive(FolderAccessEntity grant, DateTimeOffset now) =>
+        GrantIsActive(grant.ExpiresAt, now);
+
+    private static bool GrantIsActive(DateTimeOffset? expiresAt, DateTimeOffset now) =>
+        !expiresAt.HasValue || expiresAt.Value > now;
 }
