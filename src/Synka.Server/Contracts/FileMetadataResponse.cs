@@ -6,8 +6,6 @@ public sealed record FileMetadataResponse(
     string ContentType,
     long SizeBytes,
     string StoragePath,
-    string? WindowsFileId,
-    string? UnixFileId,
     string? ContentHash,
     DateTimeOffset UploadedAt,
     DateTimeOffset? UpdatedAt);

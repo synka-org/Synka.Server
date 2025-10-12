@@ -3,12 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
-using Synka.Server.Helpers;
 
 namespace Synka.Server.Services;
 
 /// <summary>
-/// Service for handling file uploads with metadata tracking using platform-specific file identifiers.
+/// Service for handling file uploads with metadata tracking.
 /// </summary>
 /// <param name="dbContext">Database context.</param>
 /// <param name="configuration">Application configuration.</param>
@@ -58,8 +57,6 @@ public sealed class FileUploadService(
         var storagePath = Path.Combine(_uploadDirectory, storageFileName);
 
         string? contentHash = null;
-        string? windowsFileId = null;
-        string? unixFileId = null;
 
         try
         {
@@ -85,10 +82,6 @@ public sealed class FileUploadService(
                 }
             }
 
-            // Get platform-specific file identifiers
-            FileIdentifierHelper.TryGetWindowsFileId(storagePath, out windowsFileId);
-            FileIdentifierHelper.TryGetUnixFileId(storagePath, out unixFileId);
-
             // Store metadata in database
             var metadata = new FileMetadataEntity
             {
@@ -98,8 +91,6 @@ public sealed class FileUploadService(
                 ContentType = file.ContentType,
                 SizeBytes = file.Length,
                 StoragePath = storagePath,
-                WindowsFileId = windowsFileId,
-                UnixFileId = unixFileId,
                 ContentHash = contentHash,
                 UploadedAt = DateTimeOffset.UtcNow
             };
@@ -162,8 +153,6 @@ public sealed class FileUploadService(
             metadata.ContentType,
             metadata.SizeBytes,
             metadata.StoragePath,
-            metadata.WindowsFileId,
-            metadata.UnixFileId,
             metadata.ContentHash,
             metadata.UploadedAt,
             metadata.UpdatedAt);
@@ -190,8 +179,6 @@ public sealed class FileUploadService(
             metadata.ContentType,
             metadata.SizeBytes,
             metadata.StoragePath,
-            metadata.WindowsFileId,
-            metadata.UnixFileId,
             metadata.ContentHash,
             metadata.UploadedAt,
             metadata.UpdatedAt));
