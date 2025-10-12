@@ -84,4 +84,96 @@ internal static class WebApplicationExtensions
             .WithTags("Configuration")
             .AllowAnonymous();
     }
+
+    public static void MapFileUploadEndpoints(this WebApplication app)
+    {
+        var filesGroup = app.MapGroup("/api/v1/files")
+            .WithTags("Files")
+            .RequireAuthorization();
+
+        // Upload a file
+        filesGroup.MapPost("/", async (
+            HttpContext httpContext,
+            IFileUploadService fileUploadService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!httpContext.Request.HasFormContentType)
+            {
+                return Results.BadRequest(new { error = "Request must be multipart/form-data" });
+            }
+
+            var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+            var file = form.Files.GetFile("file");
+
+            if (file is null)
+            {
+                return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
+            }
+
+            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null || !Guid.TryParse(userId, out var userGuid))
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                var response = await fileUploadService.UploadFileAsync(userGuid, file, cancellationToken);
+                return Results.Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("UploadFile")
+        .DisableAntiforgery();
+
+        // Get file metadata
+        filesGroup.MapGet("/{fileId:guid}", async (
+            Guid fileId,
+            IFileUploadService fileUploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var metadata = await fileUploadService.GetFileMetadataAsync(fileId, cancellationToken);
+            return metadata is not null ? Results.Ok(metadata) : Results.NotFound();
+        })
+        .WithName("GetFileMetadata");
+
+        // List user's files
+        filesGroup.MapGet("/", async (
+            HttpContext httpContext,
+            IFileUploadService fileUploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null || !Guid.TryParse(userId, out var userGuid))
+            {
+                return Results.Unauthorized();
+            }
+
+            var files = await fileUploadService.ListUserFilesAsync(userGuid, cancellationToken);
+            return Results.Ok(files);
+        })
+        .WithName("ListUserFiles");
+
+        // Delete a file
+        filesGroup.MapDelete("/{fileId:guid}", async (
+            Guid fileId,
+            HttpContext httpContext,
+            IFileUploadService fileUploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null || !Guid.TryParse(userId, out var userGuid))
+            {
+                return Results.Unauthorized();
+            }
+
+            var deleted = await fileUploadService.DeleteFileAsync(fileId, userGuid, cancellationToken);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        })
+        .WithName("DeleteFile");
+    }
 }
+

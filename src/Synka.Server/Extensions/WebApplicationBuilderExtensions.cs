@@ -124,5 +124,6 @@ internal static class WebApplicationBuilderExtensions
     {
         builder.Services.AddScoped<IConfigurationStateService, ConfigurationStateService>();
         builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
+        builder.Services.AddScoped<IFileUploadService, FileUploadService>();
     }
 }
