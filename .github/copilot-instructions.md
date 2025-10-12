@@ -134,3 +134,41 @@ dotnet format analyzers --verify-no-changes --verbosity diagnostic
 - Update tests when endpoint behavior changes
 - Document new config in `README.md`
 - Keep OpenAPI exposure rules accurate
+
+## AI Agent Workflow Rules
+
+**🚨 CRITICAL: User Confirmation Before Actions**
+
+1. **Before Committing:**
+   - **ALWAYS ask the user for confirmation before running `git commit`**
+   - Present a summary of changes to be committed
+   - Wait for explicit user approval
+
+2. **After Committing:**
+   - **ALWAYS ask the user if you should create a Pull Request**
+   - Do NOT automatically create PRs without user confirmation
+   - Offer to create PR using GitHub MCP if user approves
+
+3. **Markdown File Editing:**
+   - **ALWAYS check for markdown linter errors after editing markdown files**
+   - Run validation or report any formatting issues found
+   - Fix critical formatting issues before asking to commit
+
+**Example Workflow:**
+```
+AI: I've made the following changes:
+    - Modified: Program.cs
+    - Added: NewFeature.cs
+    
+    Should I commit these changes? (yes/no)
+
+User: yes
+
+AI: Changes committed successfully.
+    
+    Would you like me to create a Pull Request using GitHub MCP? (yes/no)
+
+User: yes
+
+AI: Creating PR...
+```
