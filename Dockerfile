@@ -30,16 +30,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS backend-build
 WORKDIR /src
 
 # Copy solution and project files
-COPY Synka.Server/Directory.Build.props Synka.Server/global.json Synka.Server/dotnet-tools.json Synka.Server/Synka.slnx ./
-COPY Synka.Server/src/Synka.Server/Synka.Server.csproj ./src/Synka.Server/
-COPY Synka.Server/tests/Synka.Server.Tests/Synka.Server.Tests.csproj ./tests/Synka.Server.Tests/
+COPY Directory.Build.props global.json dotnet-tools.json Synka.slnx ./
+COPY src/Synka.Server/Synka.Server.csproj ./src/Synka.Server/
+COPY tests/Synka.Server.Tests/Synka.Server.Tests.csproj ./tests/Synka.Server.Tests/
 
 # Restore dependencies
 RUN dotnet restore
 
 # Copy the rest of the source code
-COPY Synka.Server/src/ ./src/
-COPY Synka.Server/tests/ ./tests/
+COPY src/ ./src/
+COPY tests/ ./tests/
 
 # Build and publish the application
 RUN dotnet publish src/Synka.Server/Synka.Server.csproj \
