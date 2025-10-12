@@ -58,7 +58,7 @@ internal static class WebApplicationExtensions
 
     public static void MapServiceManifestEndpoint(this WebApplication app)
     {
-        app.MapGet("/", async (
+        app.MapGet("/api/manifest", async (
             IConfigurationStateService configurationStateService,
             CancellationToken cancellationToken) =>
             await configurationStateService.GetServiceManifestAsync(cancellationToken))

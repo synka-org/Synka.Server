@@ -136,9 +136,11 @@ Nightly builds run automatically every day at 03:00 UTC and are available as:
 The API exposes:
 
 - `GET /health` for health checks
-- `GET /` returning a small service manifest
+- `GET /api/manifest` returning a service manifest with configuration status
 - Identity API endpoints (register/login/token management) under `/auth/*`
 - OpenAPI metadata at `/openapi.json` while running in `Development` or when `OpenApi__Expose=true`
+
+The root path `/` serves the Angular frontend (when built with Docker).
 
 ## 🗄️ Database configuration
 
