@@ -24,30 +24,6 @@ public sealed class FileUploadService(
     private const long MaxFileSizeBytes = 100 * 1024 * 1024;
     private readonly string _uploadDirectory = configuration.GetValue<string>("FileUpload:Directory") ?? Path.Combine(Directory.GetCurrentDirectory(), "uploads");
 
-    private static readonly Action<ILogger, Guid, string, long, Guid, Exception?> LogFileUploaded =
-        LoggerMessage.Define<Guid, string, long, Guid>(
-            LogLevel.Information,
-            new EventId(1, nameof(LogFileUploaded)),
-            "File uploaded - ID: {FileId}, Name: {FileName}, Size: {Size}, User: {UserId}");
-
-    private static readonly Action<ILogger, string, Exception?> LogDeleteFileFailed =
-        LoggerMessage.Define<string>(
-            LogLevel.Warning,
-            new EventId(2, nameof(LogDeleteFileFailed)),
-            "Failed to delete file {Path} after upload failure");
-
-    private static readonly Action<ILogger, string, Guid, Exception?> LogFileDeleted =
-        LoggerMessage.Define<string, Guid>(
-            LogLevel.Information,
-            new EventId(3, nameof(LogFileDeleted)),
-            "Deleted file {Path} for file ID {FileId}");
-
-    private static readonly Action<ILogger, string, Guid, Exception?> LogDeleteFileForIdFailed =
-        LoggerMessage.Define<string, Guid>(
-            LogLevel.Warning,
-            new EventId(4, nameof(LogDeleteFileForIdFailed)),
-            "Failed to delete file {Path} for file ID {FileId}");
-
     /// <summary>
     /// Upload a file and store its metadata.
     /// </summary>
@@ -131,7 +107,7 @@ public sealed class FileUploadService(
             dbContext.FileMetadata.Add(metadata);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            LogFileUploaded(logger, fileId, file.FileName, file.Length, userId, null);
+            FileUploadServiceLoggers.LogFileUploaded(logger, fileId, file.FileName, file.Length, userId, null);
 
             return new FileUploadResponse(
                 fileId,
@@ -154,7 +130,7 @@ public sealed class FileUploadService(
 #pragma warning disable CA1031 // Catch specific exception - logging cleanup failure
                 catch (Exception ex)
                 {
-                    LogDeleteFileFailed(logger, storagePath, ex);
+                    FileUploadServiceLoggers.LogDeleteFileFailed(logger, storagePath, ex);
                 }
 #pragma warning restore CA1031
             }
@@ -248,12 +224,12 @@ public sealed class FileUploadService(
             try
             {
                 File.Delete(metadata.StoragePath);
-                LogFileDeleted(logger, metadata.StoragePath, fileId, null);
+                FileUploadServiceLoggers.LogFileDeleted(logger, metadata.StoragePath, fileId, null);
             }
 #pragma warning disable CA1031 // Catch specific exception - logging deletion failure
             catch (Exception ex)
             {
-                LogDeleteFileForIdFailed(logger, metadata.StoragePath, fileId, ex);
+                FileUploadServiceLoggers.LogDeleteFileForIdFailed(logger, metadata.StoragePath, fileId, ex);
             }
 #pragma warning restore CA1031
         }
