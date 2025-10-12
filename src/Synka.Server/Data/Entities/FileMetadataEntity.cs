@@ -41,16 +41,6 @@ public class FileMetadataEntity
     public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Windows file identifier (volume serial + file index).
-    /// </summary>
-    public string? WindowsFileId { get; set; }
-
-    /// <summary>
-    /// Unix file identifier (device + inode).
-    /// </summary>
-    public string? UnixFileId { get; set; }
-
-    /// <summary>
     /// SHA-256 hash of file content for deduplication.
     /// </summary>
     public string? ContentHash { get; set; }

@@ -3,12 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
-using Synka.Server.Helpers;
 
 namespace Synka.Server.Services;
 
 /// <summary>
-/// Service for handling file uploads with metadata tracking using platform-specific file identifiers.
+/// Service for handling file uploads with metadata tracking.
 /// </summary>
 /// <param name="dbContext">Database context.</param>
 /// <param name="configuration">Application configuration.</param>
@@ -58,8 +57,6 @@ public sealed class FileUploadService(
         var storagePath = Path.Combine(_uploadDirectory, storageFileName);
 
         string? contentHash = null;
-        string? windowsFileId = null;
-        string? unixFileId = null;
 
         try
         {
@@ -77,17 +74,13 @@ public sealed class FileUploadService(
                     await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                     hashAlgorithm.TransformBlock(buffer, 0, bytesRead, null, 0);
                 }
-                hashAlgorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                hashAlgorithm.TransformFinalBlock([], 0, 0);
 
                 if (hashAlgorithm.Hash is not null)
                 {
                     contentHash = Convert.ToHexString(hashAlgorithm.Hash);
                 }
             }
-
-            // Get platform-specific file identifiers
-            windowsFileId = FileIdentifierHelper.TryGetWindowsFileId(storagePath);
-            unixFileId = FileIdentifierHelper.TryGetUnixFileId(storagePath);
 
             // Store metadata in database
             var metadata = new FileMetadataEntity
@@ -98,8 +91,6 @@ public sealed class FileUploadService(
                 ContentType = file.ContentType,
                 SizeBytes = file.Length,
                 StoragePath = storagePath,
-                WindowsFileId = windowsFileId,
-                UnixFileId = unixFileId,
                 ContentHash = contentHash,
                 UploadedAt = DateTimeOffset.UtcNow
             };
@@ -127,12 +118,10 @@ public sealed class FileUploadService(
                 {
                     File.Delete(storagePath);
                 }
-#pragma warning disable CA1031 // Catch specific exception - logging cleanup failure
                 catch (Exception ex)
                 {
                     FileUploadServiceLoggers.LogDeleteFileFailed(logger, storagePath, ex);
                 }
-#pragma warning restore CA1031
             }
 
             throw;
@@ -164,8 +153,6 @@ public sealed class FileUploadService(
             metadata.ContentType,
             metadata.SizeBytes,
             metadata.StoragePath,
-            metadata.WindowsFileId,
-            metadata.UnixFileId,
             metadata.ContentHash,
             metadata.UploadedAt,
             metadata.UpdatedAt);
@@ -192,8 +179,6 @@ public sealed class FileUploadService(
             metadata.ContentType,
             metadata.SizeBytes,
             metadata.StoragePath,
-            metadata.WindowsFileId,
-            metadata.UnixFileId,
             metadata.ContentHash,
             metadata.UploadedAt,
             metadata.UpdatedAt));
