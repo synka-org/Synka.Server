@@ -137,38 +137,59 @@ dotnet format analyzers --verify-no-changes --verbosity diagnostic
 
 ## AI Agent Workflow Rules
 
-**🚨 CRITICAL: User Confirmation Before Actions**
+**🚨 CRITICAL: Commit and PR Workflow**
 
-1. **Before Committing:**
-   - **ALWAYS ask the user for confirmation before running `git commit`**
-   - Present a summary of changes to be committed
-   - Wait for explicit user approval
+1. **When User Says "commit" or "yes" to commit:**
+   - **Immediately commit the staged changes** without asking again
+   - After committing, **ask once** if user wants a PR created
+   - Do NOT ask for confirmation before committing if user already said yes
 
-2. **After Committing:**
-   - **ALWAYS ask the user if you should create a Pull Request**
-   - Do NOT automatically create PRs without user confirmation
-   - Offer to create PR using GitHub MCP if user approves
+2. **When User Says "commit and pr" or "yes and pr":**
+   - **Immediately commit the staged changes** 
+   - **Immediately create a Pull Request** using GitHub MCP
+   - Do NOT ask for any confirmations
 
-3. **Markdown File Editing:**
+3. **When Making Changes:**
+   - Present a summary of changes made
+   - Ask: "Should I commit these changes?" (or "commit and pr?")
+   - Wait for explicit user response
+   - Then follow the rules above based on their response
+
+4. **Markdown File Editing:**
    - **ALWAYS check for markdown linter errors after editing markdown files**
    - Run validation or report any formatting issues found
-   - Fix critical formatting issues before asking to commit
+   - Fix critical formatting issues before committing
 
-**Example Workflow:**
+**Example Workflows:**
+
+*Scenario 1: User wants to review before PR*
 ```
 AI: I've made the following changes:
     - Modified: Program.cs
     - Added: NewFeature.cs
     
-    Should I commit these changes? (yes/no)
+    Should I commit these changes?
 
 User: yes
 
-AI: Changes committed successfully.
+AI: [Commits immediately]
+    Changes committed successfully.
     
-    Would you like me to create a Pull Request using GitHub MCP? (yes/no)
+    Would you like me to create a Pull Request?
 
 User: yes
 
-AI: Creating PR...
+AI: [Creates PR immediately]
+```
+
+*Scenario 2: User wants both immediately*
+```
+AI: I've made the following changes:
+    - Modified: Program.cs
+    
+    Should I commit and create a PR?
+
+User: yes
+
+AI: [Commits and creates PR immediately without asking again]
 ```
