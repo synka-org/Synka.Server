@@ -16,7 +16,7 @@ internal sealed class ConfigurationEndpointTests
     public async Task Configuration_WhenNoUsersExist_CreatesUserAndReturnsOk()
     {
         // Arrange
-    await using var factory = new TestWebApplicationFactory();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using (var scope = factory.Services.CreateScope())
@@ -42,7 +42,7 @@ internal sealed class ConfigurationEndpointTests
     public async Task Configuration_AfterUserExists_ReturnsConflict()
     {
         // Arrange
-    await using var factory = new TestWebApplicationFactory();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using (var scope = factory.Services.CreateScope())
@@ -74,7 +74,7 @@ internal sealed class ConfigurationEndpointTests
     public async Task Configuration_WithInvalidPassword_ReturnsBadRequest()
     {
         // Arrange
-    await using var factory = new TestWebApplicationFactory();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using (var scope = factory.Services.CreateScope())
@@ -100,7 +100,7 @@ internal sealed class ConfigurationEndpointTests
     public async Task Configuration_WithInvalidEmail_ReturnsBadRequest()
     {
         // Arrange
-    await using var factory = new TestWebApplicationFactory();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using (var scope = factory.Services.CreateScope())
@@ -126,7 +126,7 @@ internal sealed class ConfigurationEndpointTests
     public async Task ServiceManifest_AfterConfiguration_RequiresConfigurationIsFalse()
     {
         // Arrange
-    await using var factory = new TestWebApplicationFactory();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using (var scope = factory.Services.CreateScope())

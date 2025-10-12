@@ -112,8 +112,8 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
             ExpiresAt = expiresAt
         };
 
-    context.FolderAccess.Add(access);
-    await context.SaveChangesAsync(cancellationToken);
+        context.FolderAccess.Add(access);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateAccessAsync(
