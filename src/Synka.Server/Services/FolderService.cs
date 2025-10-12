@@ -103,19 +103,45 @@ public sealed class FolderService(SynkaDbContext context) : IFolderService
         Guid? parentFolderId = null,
         CancellationToken cancellationToken = default)
     {
-        // Get folders owned by the user or shared with them
-        var query = context.Folders
-            .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId);
-
-        return await query
-            .Where(f =>
-                f.OwnerId == userId ||
-                f.OwnerId == null || // Shared roots accessible to all
-                f.SharedWith.Any(a =>
-                    a.UserId == userId &&
-                    (a.ExpiresAt == null || a.ExpiresAt > DateTimeOffset.UtcNow)))
+        // Get folders owned by the user
+        var ownedFolders = await context.Folders
+            .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId && f.OwnerId == userId)
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
+
+        // Get shared root folders (accessible to all)
+        var sharedRoots = await context.Folders
+            .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId && f.OwnerId == null)
+            .OrderBy(f => f.Name)
+            .ToListAsync(cancellationToken);
+
+        // Get folders explicitly shared with user
+        var now = DateTimeOffset.UtcNow;
+        var sharedFolderIds = await context.FolderAccess
+            .AsNoTracking()
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.FolderId, a.ExpiresAt })
+            .ToListAsync(cancellationToken);
+
+        var activeSharedFolderIds = sharedFolderIds
+            .Where(a => a.ExpiresAt is null || a.ExpiresAt.Value > now)
+            .Select(a => a.FolderId)
+            .ToList();
+
+        var sharedFolders = await context.Folders
+            .Where(f => !f.IsDeleted &&
+                       f.ParentFolderId == parentFolderId &&
+                       activeSharedFolderIds.Contains(f.Id))
+            .OrderBy(f => f.Name)
+            .ToListAsync(cancellationToken);
+
+        // Combine and return all accessible folders
+        return ownedFolders
+            .Concat(sharedRoots)
+            .Concat(sharedFolders)
+            .Distinct()
+            .OrderBy(f => f.Name)
+            .ToList();
     }
 
     public async Task DeleteFolderAsync(
