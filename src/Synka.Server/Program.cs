@@ -23,7 +23,7 @@ app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/api/v{version:apiVersion}/health");
 app.MapAuthenticationEndpoints();
 app.MapServiceManifestEndpoint();
 app.MapConfigurationEndpoint();

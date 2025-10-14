@@ -11,7 +11,7 @@ internal sealed class HealthEndpointTests
         await using var factory = new WebApplicationFactory<Program>();
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/health");
+        var response = await client.GetAsync("/api/v1/health");
 
         await Assert.That(response.StatusCode)
             .IsEqualTo(HttpStatusCode.Redirect);
