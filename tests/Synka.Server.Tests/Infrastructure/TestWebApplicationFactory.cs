@@ -20,24 +20,26 @@ internal class TestWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
-        {
-            // Remove the existing DbContext registration
-            services.RemoveAll<DbContextOptions<SynkaDbContext>>();
-            services.RemoveAll<SynkaDbContext>();
+        // Set environment to Testing to skip migrations
+        builder.UseEnvironment("Testing")
+            .ConfigureServices(services =>
+            {
+                // Remove the existing DbContext registration
+                services.RemoveAll<DbContextOptions<SynkaDbContext>>();
+                services.RemoveAll<SynkaDbContext>();
 
-            // Create a unique in-memory database for this test instance
-            _connection = new SqliteConnection("DataSource=:memory:");
-            _connection.Open();
+                // Create a unique in-memory database for this test instance
+                _connection = new SqliteConnection("DataSource=:memory:");
+                _connection.Open();
 
-            services.AddDbContext<SynkaDbContext>(options => options.UseSqlite(_connection));
+                services.AddDbContext<SynkaDbContext>(options => options.UseSqlite(_connection));
 
-            // Ensure the database schema is created for the in-memory database
-            var serviceProvider = services.BuildServiceProvider();
-            using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
-            dbContext.Database.EnsureCreated();
-        });
+                // Ensure the database schema is created for the in-memory database
+                var serviceProvider = services.BuildServiceProvider();
+                using var scope = serviceProvider.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
+                dbContext.Database.EnsureCreated();
+            });
     }
 
     protected override void Dispose(bool disposing)

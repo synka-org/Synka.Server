@@ -23,6 +23,12 @@ internal static class WebApplicationExtensions
 
     public static void EnsureDatabaseIsMigrated(this WebApplication app)
     {
+        // Skip migrations in test environments where EnsureCreated is used instead
+        if (app.Environment.EnvironmentName == "Testing")
+        {
+            return;
+        }
+
         using var scope = app.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
         database.Database.Migrate();
