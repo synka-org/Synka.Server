@@ -30,7 +30,7 @@ internal static class WebApplicationExtensions
 
     public static void MapAuthenticationEndpoints(this WebApplication app)
     {
-        var authGroup = app.MapGroup("/auth")
+        var authGroup = app.MapGroup("/api/v{version:apiVersion}/auth")
             .WithTags("Authentication");
 
         var identityEndpoints = authGroup.MapIdentityApi<ApplicationUserEntity>();
@@ -170,4 +170,3 @@ internal static class WebApplicationExtensions
         .WithName("DeleteFile");
     }
 }
-
