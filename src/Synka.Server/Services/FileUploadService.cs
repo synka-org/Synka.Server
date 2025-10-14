@@ -170,10 +170,12 @@ public sealed class FileUploadService(
         var files = await dbContext.FileMetadata
             .AsNoTracking()
             .Where(f => f.UploadedById == userId)
-            .OrderByDescending(f => f.UploadedAt)
             .ToListAsync(cancellationToken);
 
-        return files.Select(metadata => new FileMetadataResponse(
+        // Order in memory after materialization (SQLite doesn't support DateTimeOffset in ORDER BY)
+        var orderedFiles = files.OrderByDescending(f => f.UploadedAt);
+
+        return orderedFiles.Select(metadata => new FileMetadataResponse(
             metadata.Id,
             metadata.FileName,
             metadata.ContentType,
