@@ -23,6 +23,12 @@ public sealed class TestAuthHandler(
             claims.Add(new Claim(ClaimTypes.Name, Options.UserName ?? "TestUser"));
         }
 
+        // Ensure NameIdentifier claim exists for user ID resolution in file endpoints
+        if (!claims.Any(claim => claim.Type == ClaimTypes.NameIdentifier))
+        {
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()));
+        }
+
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
