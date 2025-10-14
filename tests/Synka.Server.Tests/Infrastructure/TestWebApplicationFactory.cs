@@ -31,6 +31,12 @@ internal class TestWebApplicationFactory : WebApplicationFactory<Program>
             _connection.Open();
 
             services.AddDbContext<SynkaDbContext>(options => options.UseSqlite(_connection));
+
+            // Ensure the database schema is created for the in-memory database
+            var serviceProvider = services.BuildServiceProvider();
+            using var scope = serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
+            dbContext.Database.EnsureCreated();
         });
     }
 
