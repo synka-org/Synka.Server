@@ -59,17 +59,11 @@ internal static class WebApplicationExtensions
 
     public static void MapServiceManifestEndpoint(this WebApplication app)
     {
-        var versionSet = app.NewApiVersionSet()
-            .HasApiVersion(new ApiVersion(1, 0))
-            .ReportApiVersions()
-            .Build();
-
         app.MapGet("/api/v{version:apiVersion}/manifest", async (
             IConfigurationStateService configurationStateService,
             CancellationToken cancellationToken) =>
             await configurationStateService.GetServiceManifestAsync(cancellationToken))
             .WithName("GetServiceManifest")
-            .WithApiVersionSet(versionSet)
             .AllowAnonymous();
     }
 
