@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Authorization;
 using Synka.Server.Contracts;
@@ -75,7 +75,7 @@ internal static class WebApplicationExtensions
 
     public static void MapConfigurationEndpoint(this WebApplication app)
     {
-        app.MapPost("/configure", async (
+        app.MapPost("/api/v{version:apiVersion}/configure", async (
             ConfigurationRequest request,
             IConfigurationService configurationService,
             CancellationToken cancellationToken) =>
@@ -85,9 +85,9 @@ internal static class WebApplicationExtensions
             .AllowAnonymous();
     }
 
-    public static void MapFileUploadEndpoints(this WebApplication app)
+    public static void MapFileEndpoints(this WebApplication app)
     {
-        var filesGroup = app.MapGroup("/api/v1/files")
+        var filesGroup = app.MapGroup("/api/v{version:apiVersion}/files")
             .WithTags("Files")
             .RequireAuthorization();
 
@@ -110,7 +110,7 @@ internal static class WebApplicationExtensions
                 return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
             }
 
-            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId is null || !Guid.TryParse(userId, out var userGuid))
             {
                 return Results.Unauthorized();
@@ -146,7 +146,7 @@ internal static class WebApplicationExtensions
             IFileUploadService fileUploadService,
             CancellationToken cancellationToken) =>
         {
-            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId is null || !Guid.TryParse(userId, out var userGuid))
             {
                 return Results.Unauthorized();
@@ -164,7 +164,7 @@ internal static class WebApplicationExtensions
             IFileUploadService fileUploadService,
             CancellationToken cancellationToken) =>
         {
-            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId is null || !Guid.TryParse(userId, out var userGuid))
             {
                 return Results.Unauthorized();

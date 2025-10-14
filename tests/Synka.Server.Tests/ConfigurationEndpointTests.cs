@@ -4,9 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Tests.Infrastructure;
-using TUnit.Assertions;
-using TUnit.Assertions.Extensions;
-using TUnit.Core;
 
 namespace Synka.Server.Tests;
 
@@ -31,7 +28,7 @@ internal sealed class ConfigurationEndpointTests
             Password: "Test123!@#");
 
         // Act
-        var response = await client.PostAsJsonAsync("/configure", request);
+        var response = await client.PostAsJsonAsync("/api/v1/configure", request);
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -56,14 +53,14 @@ internal sealed class ConfigurationEndpointTests
             Email: $"admin-{Guid.NewGuid():N}@synka.local",
             Password: "Test123!@#");
 
-        await client.PostAsJsonAsync("/configure", firstRequest);
+        await client.PostAsJsonAsync("/api/v1/configure", firstRequest);
 
         var secondRequest = new ConfigurationRequest(
             Email: $"another-{Guid.NewGuid():N}@synka.local",
             Password: "Test456!@#");
 
         // Act
-        var response = await client.PostAsJsonAsync("/configure", secondRequest);
+        var response = await client.PostAsJsonAsync("/api/v1/configure", secondRequest);
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -89,7 +86,7 @@ internal sealed class ConfigurationEndpointTests
             Password: "weak");
 
         // Act
-        var response = await client.PostAsJsonAsync("/configure", request);
+        var response = await client.PostAsJsonAsync("/api/v1/configure", request);
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -115,7 +112,7 @@ internal sealed class ConfigurationEndpointTests
             Password: "Test123!@#");
 
         // Act
-        var response = await client.PostAsJsonAsync("/configure", request);
+        var response = await client.PostAsJsonAsync("/api/v1/configure", request);
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -140,7 +137,7 @@ internal sealed class ConfigurationEndpointTests
             Email: $"admin-{Guid.NewGuid():N}@synka.local",
             Password: "Test123!@#");
 
-        await client.PostAsJsonAsync("/configure", request);
+        await client.PostAsJsonAsync("/api/v1/configure", request);
 
         // Act
         var manifest = await client.GetFromJsonAsync<ServiceManifestResponse>("/api/v1/manifest");
