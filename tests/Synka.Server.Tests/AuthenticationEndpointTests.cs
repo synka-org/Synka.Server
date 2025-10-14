@@ -5,9 +5,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Synka.Server.Data.Entities;
 using Synka.Server.Tests.Infrastructure;
-using TUnit.Assertions;
-using TUnit.Assertions.Extensions;
-using TUnit.Core;
 
 namespace Synka.Server.Tests;
 

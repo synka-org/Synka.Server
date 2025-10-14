@@ -27,7 +27,7 @@ app.MapHealthChecks("/health");
 app.MapAuthenticationEndpoints();
 app.MapServiceManifestEndpoint();
 app.MapConfigurationEndpoint();
-app.MapFileUploadEndpoints();
+app.MapFileEndpoints();
 
 // Fallback to index.html for Angular routing
 app.MapFallbackToFile("index.html");

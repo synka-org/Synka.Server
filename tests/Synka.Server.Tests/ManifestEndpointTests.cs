@@ -2,9 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using Synka.Server.Contracts;
 using Synka.Server.Tests.Infrastructure;
-using TUnit.Assertions;
-using TUnit.Assertions.Extensions;
-using TUnit.Core;
 
 namespace Synka.Server.Tests;
 

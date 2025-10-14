@@ -1,8 +1,5 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
-using TUnit.Assertions;
-using TUnit.Assertions.Extensions;
-using TUnit.Core;
 
 namespace Synka.Server.Tests;
 

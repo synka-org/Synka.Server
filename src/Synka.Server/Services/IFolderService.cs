@@ -1,4 +1,3 @@
-using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
