@@ -23,18 +23,19 @@ internal static class WebApplicationExtensions
 
     public static void EnsureDatabaseIsMigrated(this WebApplication app)
     {
-        // Skip migrations in test environments where EnsureCreated is used instead
-        if (app.Environment.EnvironmentName == "Testing")
+        using var scope = app.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
+
+        // Skip migrations for in-memory databases (used in tests)
+        // In-memory SQLite connections have "DataSource=:memory:" or "Data Source=:memory:"
+        var connectionString = database.Database.GetConnectionString();
+        if (connectionString?.Contains(":memory:", StringComparison.OrdinalIgnoreCase) == true)
         {
             return;
         }
 
-        using var scope = app.Services.CreateScope();
-        var database = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
         database.Database.Migrate();
-    }
-
-    public static void MapAuthenticationEndpoints(this WebApplication app)
+    }    public static void MapAuthenticationEndpoints(this WebApplication app)
     {
         var authGroup = app.MapGroup("/api/v{version:apiVersion}/auth")
             .WithTags("Authentication");

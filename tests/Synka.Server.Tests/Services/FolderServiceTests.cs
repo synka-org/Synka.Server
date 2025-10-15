@@ -21,10 +21,8 @@ internal sealed class FolderServiceTests : IDisposable
         _context = _scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
         _folderService = new FolderService(_context);
 
-        // Ensure database is created
-        _context.Database.EnsureCreated();
-
         // Disable foreign key constraints for testing
+        // (Database is already created by TestWebApplicationFactory)
         _context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = OFF;");
     }
 

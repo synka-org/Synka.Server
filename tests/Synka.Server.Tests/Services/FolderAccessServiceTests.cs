@@ -23,10 +23,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
         _folderService = new FolderService(_context);
         _accessService = new FolderAccessService(_context);
 
-        // Ensure database is created
-        _context.Database.EnsureCreated();
-
         // Disable foreign key constraints for testing
+        // (Database is already created by TestWebApplicationFactory)
         _context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = OFF;");
     }
 
