@@ -56,10 +56,11 @@ internal sealed class OpenApiEndpointTests
             .IsEqualTo(HttpStatusCode.OK);
     }
 
-    private sealed class ProductionWebApplicationFactory : WebApplicationFactory<Program>
+    private sealed class ProductionWebApplicationFactory : TestWebApplicationFactory
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            base.ConfigureWebHost(builder); // Set up Testing environment and database
             builder.UseEnvironment("Production");
         }
     }
@@ -68,15 +69,16 @@ internal sealed class OpenApiEndpointTests
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Production");
             base.ConfigureWebHost(builder);
+            builder.UseEnvironment("Production");
         }
     }
 
-    private sealed class ProductionOpenApiExposedWebApplicationFactory : WebApplicationFactory<Program>
+    private sealed class ProductionOpenApiExposedWebApplicationFactory : TestWebApplicationFactory
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            base.ConfigureWebHost(builder); // Set up Testing environment and database
             builder.UseEnvironment("Production")
                 .ConfigureAppConfiguration((_, configuration) =>
             {
