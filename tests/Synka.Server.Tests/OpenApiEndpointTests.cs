@@ -11,7 +11,7 @@ internal sealed class OpenApiEndpointTests
     [Test]
     public async Task OpenApi_IsAccessible_InDevelopment()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/openapi.json");

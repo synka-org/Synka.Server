@@ -14,7 +14,7 @@ internal sealed class AuthenticationEndpointTests
     public async Task Register_RequiresAuthentication()
     {
         // Arrange
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         // Act
