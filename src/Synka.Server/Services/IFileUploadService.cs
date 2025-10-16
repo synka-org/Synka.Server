@@ -9,12 +9,12 @@ public interface IFileUploadService
     /// </summary>
     /// <param name="userId">User ID of the uploader.</param>
     /// <param name="file">File to upload.</param>
-    /// <param name="folderId">Optional folder ID where the file should be stored.</param>
+    /// <param name="folderId">Folder ID where the file should be stored.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<FileUploadResponse> UploadFileAsync(
         Guid userId,
         IFormFile file,
-        Guid? folderId = null,
+        Guid folderId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

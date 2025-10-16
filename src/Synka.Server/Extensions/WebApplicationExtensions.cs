@@ -120,12 +120,11 @@ internal static class WebApplicationExtensions
                     return Results.Unauthorized();
                 }
 
-                // Optional folderId from form data
-                Guid? folderId = null;
-                if (form.TryGetValue("folderId", out var folderIdValue) &&
-                    Guid.TryParse(folderIdValue, out var parsedFolderId))
+                // Required folderId from form data
+                if (!form.TryGetValue("folderId", out var folderIdValue) ||
+                    !Guid.TryParse(folderIdValue, out var folderId))
                 {
-                    folderId = parsedFolderId;
+                    return Results.BadRequest(new { error = "folderId is required and must be a valid GUID" });
                 }
 
                 var response = await fileUploadService.UploadFileAsync(userGuid, file, folderId, cancellationToken);
