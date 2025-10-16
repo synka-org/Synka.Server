@@ -96,7 +96,7 @@ internal static class WebApplicationExtensions
         // Upload a file
         filesGroup.MapPost("/", async (
             HttpContext httpContext,
-            IFileUploadService fileUploadService,
+            IFileService fileService,
             CancellationToken cancellationToken) =>
         {
             if (!httpContext.Request.HasFormContentType)
@@ -114,12 +114,6 @@ internal static class WebApplicationExtensions
                     return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
                 }
 
-                var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userId is null || !Guid.TryParse(userId, out var userGuid))
-                {
-                    return Results.Unauthorized();
-                }
-
                 // Required folderId from form data
                 if (!form.TryGetValue("folderId", out var folderIdValue) ||
                     !Guid.TryParse(folderIdValue, out var folderId))
@@ -127,12 +121,16 @@ internal static class WebApplicationExtensions
                     return Results.BadRequest(new { error = "folderId is required and must be a valid GUID" });
                 }
 
-                var response = await fileUploadService.UploadFileAsync(userGuid, file, folderId, cancellationToken);
+                var response = await fileService.UploadFileAsync(file, folderId, cancellationToken);
                 return Results.Ok(response);
             }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
             }
             catch (InvalidDataException ex)
             {
@@ -146,47 +144,54 @@ internal static class WebApplicationExtensions
         // Get file metadata
         filesGroup.MapGet("/{fileId:guid}", async (
             Guid fileId,
-            IFileUploadService fileUploadService,
+            IFileService fileService,
             CancellationToken cancellationToken) =>
         {
-            var metadata = await fileUploadService.GetFileMetadataAsync(fileId, cancellationToken);
-            return metadata is not null ? Results.Ok(metadata) : Results.NotFound();
+            try
+            {
+                var metadata = await fileService.GetFileMetadataAsync(fileId, cancellationToken);
+                return metadata is not null ? Results.Ok(metadata) : Results.NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
         })
         .WithName("GetFileMetadata");
 
         // List user's files
         filesGroup.MapGet("/", async (
-            HttpContext httpContext,
-            IFileUploadService fileUploadService,
-            Guid? folderId,
+            IFileService fileService,
+            Guid folderId,
             CancellationToken cancellationToken) =>
         {
-            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null || !Guid.TryParse(userId, out var userGuid))
+            try
+            {
+                var files = await fileService.ListUserFilesAsync(folderId, cancellationToken);
+                return Results.Ok(files);
+            }
+            catch (UnauthorizedAccessException)
             {
                 return Results.Unauthorized();
             }
-
-            var files = await fileUploadService.ListUserFilesAsync(userGuid, folderId, cancellationToken);
-            return Results.Ok(files);
         })
         .WithName("ListUserFiles");
 
         // Delete a file
         filesGroup.MapDelete("/{fileId:guid}", async (
             Guid fileId,
-            HttpContext httpContext,
-            IFileUploadService fileUploadService,
+            IFileService fileService,
             CancellationToken cancellationToken) =>
         {
-            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null || !Guid.TryParse(userId, out var userGuid))
+            try
+            {
+                var deleted = await fileService.DeleteFileAsync(fileId, cancellationToken);
+                return deleted ? Results.NoContent() : Results.NotFound();
+            }
+            catch (UnauthorizedAccessException)
             {
                 return Results.Unauthorized();
             }
-
-            var deleted = await fileUploadService.DeleteFileAsync(fileId, userGuid, cancellationToken);
-            return deleted ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeleteFile");
     }

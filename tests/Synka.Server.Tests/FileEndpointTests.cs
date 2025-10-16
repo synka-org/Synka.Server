@@ -168,8 +168,10 @@ internal sealed class FileEndpointTests
         await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
+        var folderId = Guid.NewGuid();
+
         // Act
-        var response = await client.GetAsync("/api/v1/files");
+        var response = await client.GetAsync($"/api/v1/files?folderId={folderId}");
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -191,8 +193,10 @@ internal sealed class FileEndpointTests
             await dbContext.SaveChangesAsync();
         }
 
+        var folderId = Guid.NewGuid();
+
         // Act
-        var response = await client.GetAsync("/api/v1/files");
+        var response = await client.GetAsync($"/api/v1/files?folderId={folderId}");
 
         // Assert
         await Assert.That(response.StatusCode)
@@ -218,20 +222,22 @@ internal sealed class FileEndpointTests
             await dbContext.SaveChangesAsync();
         }
 
-        // Upload two files
+        var folderId = Guid.NewGuid();
+
+        // Upload two files to the same folder
         for (int i = 1; i <= 2; i++)
         {
             using var uploadContent = new MultipartFormDataContent();
             using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes($"test content {i}"));
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
             uploadContent.Add(fileContent, "file", $"test{i}.txt");
-            using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+            using var folderIdContent = new StringContent(folderId.ToString());
             uploadContent.Add(folderIdContent, "folderId");
             await client.PostAsync("/api/v1/files", uploadContent);
         }
 
         // Act
-        var response = await client.GetAsync("/api/v1/files");
+        var response = await client.GetAsync($"/api/v1/files?folderId={folderId}");
 
         // Assert
         await Assert.That(response.StatusCode)
