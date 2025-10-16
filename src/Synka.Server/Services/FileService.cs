@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
@@ -7,15 +8,17 @@ using Synka.Server.Data.Entities;
 namespace Synka.Server.Services;
 
 /// <summary>
-/// Service for handling file uploads with metadata tracking.
+/// Service for handling file operations with metadata tracking.
 /// </summary>
 /// <param name="dbContext">Database context.</param>
 /// <param name="configuration">Application configuration.</param>
+/// <param name="httpContextAccessor">HTTP context accessor.</param>
 /// <param name="logger">Logger instance.</param>
-public sealed class FileUploadService(
+public sealed class FileService(
     SynkaDbContext dbContext,
     IConfiguration configuration,
-    ILogger<FileUploadService> logger) : IFileUploadService
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<FileService> logger) : IFileService
 {
     /// <summary>
     /// 100 MB default
@@ -26,18 +29,19 @@ public sealed class FileUploadService(
     /// <summary>
     /// Upload a file and store its metadata.
     /// </summary>
-    /// <param name="userId">User ID of the uploader.</param>
     /// <param name="file">File to upload.</param>
     /// <param name="folderId">Folder ID where the file should be stored.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="ArgumentException">Thrown if file is empty or exceeds maximum allowed size.</exception>
+    /// <exception cref="UnauthorizedAccessException">Thrown if user cannot be identified.</exception>
     public async Task<FileUploadResponse> UploadFileAsync(
-        Guid userId,
         IFormFile file,
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
+
+        var userId = ExtractUserId();
 
         if (file.Length == 0)
         {
@@ -101,7 +105,7 @@ public sealed class FileUploadService(
             dbContext.FileMetadata.Add(metadata);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            FileUploadServiceLoggers.LogFileUploaded(logger, fileId, file.FileName, file.Length, userId, null);
+            FileServiceLoggers.LogFileUploaded(logger, fileId, file.FileName, file.Length, userId, null);
 
             return new FileUploadResponse(
                 fileId,
@@ -123,7 +127,7 @@ public sealed class FileUploadService(
                 }
                 catch (Exception ex)
                 {
-                    FileUploadServiceLoggers.LogDeleteFileFailed(logger, storagePath, ex);
+                    FileServiceLoggers.LogDeleteFileFailed(logger, storagePath, ex);
                 }
             }
 
@@ -137,13 +141,16 @@ public sealed class FileUploadService(
     /// </summary>
     /// <param name="fileId">File ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="UnauthorizedAccessException">Thrown if user cannot be identified.</exception>
     public async Task<FileMetadataResponse?> GetFileMetadataAsync(
         Guid fileId,
         CancellationToken cancellationToken = default)
     {
+        var userId = ExtractUserId();
+
         var metadata = await dbContext.FileMetadata
             .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.Id == fileId, cancellationToken);
+            .FirstOrDefaultAsync(f => f.Id == fileId && f.UploadedById == userId, cancellationToken);
 
         if (metadata is null)
         {
@@ -162,27 +169,21 @@ public sealed class FileUploadService(
     }
 
     /// <summary>
-    /// List files for a user, optionally filtered by folder.
+    /// List files in a folder.
     /// </summary>
-    /// <param name="userId">User ID.</param>
-    /// <param name="folderId">Optional folder ID to filter files. If null, returns all user's files.</param>
+    /// <param name="folderId">Folder ID to filter files.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="UnauthorizedAccessException">Thrown if user cannot be identified.</exception>
     public async Task<IEnumerable<FileMetadataResponse>> ListUserFilesAsync(
-        Guid userId,
-        Guid? folderId = null,
+        Guid folderId,
         CancellationToken cancellationToken = default)
     {
-        var query = dbContext.FileMetadata
+        var userId = ExtractUserId();
+
+        var files = await dbContext.FileMetadata
             .AsNoTracking()
-            .Where(f => f.UploadedById == userId);
-
-        // Filter by folder if specified
-        if (folderId.HasValue)
-        {
-            query = query.Where(f => f.FolderId == folderId.Value);
-        }
-
-        var files = await query.ToListAsync(cancellationToken);
+            .Where(f => f.UploadedById == userId && f.FolderId == folderId)
+            .ToListAsync(cancellationToken);
 
         // Order in memory after materialization (SQLite doesn't support DateTimeOffset in ORDER BY)
         var orderedFiles = files.OrderByDescending(f => f.UploadedAt);
@@ -202,13 +203,14 @@ public sealed class FileUploadService(
     /// Delete file and metadata.
     /// </summary>
     /// <param name="fileId">File ID.</param>
-    /// <param name="userId">User ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="UnauthorizedAccessException">Thrown if user cannot be identified.</exception>
     public async Task<bool> DeleteFileAsync(
         Guid fileId,
-        Guid userId,
         CancellationToken cancellationToken = default)
     {
+        var userId = ExtractUserId();
+
         var metadata = await dbContext.FileMetadata
             .FirstOrDefaultAsync(f => f.Id == fileId && f.UploadedById == userId, cancellationToken);
 
@@ -223,12 +225,12 @@ public sealed class FileUploadService(
             try
             {
                 File.Delete(metadata.StoragePath);
-                FileUploadServiceLoggers.LogFileDeleted(logger, metadata.StoragePath, fileId, null);
+                FileServiceLoggers.LogFileDeleted(logger, metadata.StoragePath, fileId, null);
             }
 #pragma warning disable CA1031 // Catch specific exception - logging deletion failure
             catch (Exception ex)
             {
-                FileUploadServiceLoggers.LogDeleteFileForIdFailed(logger, metadata.StoragePath, fileId, ex);
+                FileServiceLoggers.LogDeleteFileForIdFailed(logger, metadata.StoragePath, fileId, ex);
             }
 #pragma warning restore CA1031
         }
@@ -238,5 +240,21 @@ public sealed class FileUploadService(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+
+    private Guid ExtractUserId()
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            throw new UnauthorizedAccessException("HTTP context is not available");
+        }
+
+        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID could not be determined from the current context");
+        }
+        return userId;
     }
 }

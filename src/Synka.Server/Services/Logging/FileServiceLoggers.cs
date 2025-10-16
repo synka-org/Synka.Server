@@ -1,9 +1,9 @@
 namespace Synka.Server.Services;
 
 /// <summary>
-/// LoggerMessage delegates for FileUploadService.
+/// LoggerMessage delegates for FileService.
 /// </summary>
-internal static class FileUploadServiceLoggers
+internal static class FileServiceLoggers
 {
     public static readonly Action<ILogger, Guid, string, long, Guid, Exception?> LogFileUploaded =
         LoggerMessage.Define<Guid, string, long, Guid>(

@@ -18,6 +18,7 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddProblemDetails();
         builder.Services.AddHealthChecks();
         builder.Services.AddOpenApi();
+        builder.Services.AddHttpContextAccessor();
 
         // Add API versioning
         builder.Services.AddApiVersioning(options =>
@@ -122,7 +123,7 @@ internal static class WebApplicationBuilderExtensions
     {
         builder.Services.AddScoped<IConfigurationStateService, ConfigurationStateService>();
         builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
-        builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+        builder.Services.AddScoped<IFileService, FileService>();
         builder.Services.AddScoped<IFolderService, FolderService>();
         builder.Services.AddScoped<IFolderAccessService, FolderAccessService>();
     }
