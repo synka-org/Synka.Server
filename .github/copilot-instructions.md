@@ -142,25 +142,46 @@ dotnet format analyzers --verify-no-changes --verbosity diagnostic
 
 ## AI Agent Workflow Rules
 
-**🚨 CRITICAL: Commit and PR Workflow**
+**🚨 CRITICAL: Feature Branch Requirement**
 
-1. **When User Says "commit" or "yes" to commit:**
+- **ALWAYS create a feature branch BEFORE making any code changes**
+- **NEVER work directly on main branch** - all development MUST happen on feature branches
+- **Branch creation is MANDATORY** - do not proceed with changes until a feature branch exists
+
+**Feature Branch Workflow:**
+
+1. **Before Making ANY Changes:**
+   - Check current branch: `git branch --show-current`
+   - If on `main`: STOP and create feature branch first
+   - Branch naming: `feat/<description>`, `fix/<description>`, `docs/<description>`, etc.
+   - Example: `git checkout -b feat/add-folder-support`
+
+2. **After Creating Feature Branch:**
+   - Make your code changes
+   - Run tests to verify
+   - Present summary of changes to user
+
+3. **When User Says "commit" or "yes" to commit:**
+   - **Verify you're on a feature branch** (not main)
    - **Immediately commit the staged changes** without asking again
    - After committing, **ask once** if user wants a PR created
    - Do NOT ask for confirmation before committing if user already said yes
 
-2. **When User Says "commit and pr" or "yes and pr":**
+4. **When User Says "commit and pr" or "yes and pr":**
+   - **Verify you're on a feature branch** (not main)
    - **Immediately commit the staged changes** 
    - **Immediately create a Pull Request** using GitHub MCP
    - Do NOT ask for any confirmations
 
-3. **When Making Changes:**
+5. **When Making Changes:**
+   - **FIRST: Ensure you're on a feature branch**
+   - Make the changes
    - Present a summary of changes made
    - Ask: "Should I commit these changes?" (or "commit and pr?")
    - Wait for explicit user response
    - Then follow the rules above based on their response
 
-4. **Markdown File Editing:**
+6. **Markdown File Editing:**
    - **ALWAYS check for markdown linter errors after editing markdown files**
    - Run validation or report any formatting issues found
    - Fix critical formatting issues before committing
