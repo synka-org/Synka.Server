@@ -103,28 +103,33 @@ internal static class WebApplicationExtensions
                 return Results.BadRequest(new { error = "Request must be multipart/form-data" });
             }
 
-            var form = await httpContext.Request.ReadFormAsync(cancellationToken);
-            var file = form.Files.GetFile("file");
-
-            if (file is null)
-            {
-                return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
-            }
-
-            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null || !Guid.TryParse(userId, out var userGuid))
-            {
-                return Results.Unauthorized();
-            }
-
             try
             {
+                var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+                var file = form.Files.GetFile("file");
+
+                if (file is null)
+                {
+                    return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
+                }
+
+                var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId is null || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Results.Unauthorized();
+                }
+
                 var response = await fileUploadService.UploadFileAsync(userGuid, file, cancellationToken);
                 return Results.Ok(response);
             }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (InvalidDataException ex)
+            {
+                // Handle malformed form data
+                return Results.BadRequest(new { error = $"Invalid form data: {ex.Message}" });
             }
         })
         .WithName("UploadFile")

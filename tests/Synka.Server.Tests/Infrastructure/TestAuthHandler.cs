@@ -24,9 +24,10 @@ public sealed class TestAuthHandler(
         }
 
         // Ensure NameIdentifier claim exists for user ID resolution in file endpoints
+        // Use a consistent test user ID so all requests from the same test client use the same user
         if (!claims.Any(claim => claim.Type == ClaimTypes.NameIdentifier))
         {
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, TestAuthenticationSchemeOptions.DefaultTestUserId));
         }
 
         var identity = new ClaimsIdentity(claims, Scheme.Name);
@@ -39,6 +40,11 @@ public sealed class TestAuthHandler(
 
 public sealed class TestAuthenticationSchemeOptions : AuthenticationSchemeOptions
 {
+    /// <summary>
+    /// Default test user ID used across all test requests to ensure consistent identity.
+    /// </summary>
+    public const string DefaultTestUserId = "11111111-1111-1111-1111-111111111111";
+
     public string? UserName { get; set; }
 
     public Collection<Claim> Claims { get; } = [];

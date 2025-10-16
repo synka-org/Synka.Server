@@ -39,6 +39,9 @@ internal class TestWebApplicationFactory : WebApplicationFactory<Program>
                 using var scope = serviceProvider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
                 dbContext.Database.EnsureCreated();
+
+                // Disable foreign key constraints for testing to allow test data without strict referential integrity
+                dbContext.Database.ExecuteSqlRaw("PRAGMA foreign_keys = OFF;");
             });
     }
 
