@@ -35,7 +35,8 @@ internal static class WebApplicationExtensions
         }
 
         database.Database.Migrate();
-    }    public static void MapAuthenticationEndpoints(this WebApplication app)
+    }
+    public static void MapAuthenticationEndpoints(this WebApplication app)
     {
         var authGroup = app.MapGroup("/api/v{version:apiVersion}/auth")
             .WithTags("Authentication");
