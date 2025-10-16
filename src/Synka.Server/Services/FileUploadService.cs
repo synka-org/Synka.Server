@@ -28,11 +28,13 @@ public sealed class FileUploadService(
     /// </summary>
     /// <param name="userId">User ID of the uploader.</param>
     /// <param name="file">File to upload.</param>
+    /// <param name="folderId">Folder ID where the file should be stored.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="ArgumentException">Thrown if file is empty or exceeds maximum allowed size.</exception>
     public async Task<FileUploadResponse> UploadFileAsync(
         Guid userId,
         IFormFile file,
+        Guid folderId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -87,6 +89,7 @@ public sealed class FileUploadService(
             {
                 Id = fileId,
                 UploadedById = userId,
+                FolderId = folderId,
                 FileName = file.FileName,
                 ContentType = file.ContentType,
                 SizeBytes = file.Length,
@@ -159,18 +162,27 @@ public sealed class FileUploadService(
     }
 
     /// <summary>
-    /// List files for a user.
+    /// List files for a user, optionally filtered by folder.
     /// </summary>
     /// <param name="userId">User ID.</param>
+    /// <param name="folderId">Optional folder ID to filter files. If null, returns all user's files.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<IEnumerable<FileMetadataResponse>> ListUserFilesAsync(
         Guid userId,
+        Guid? folderId = null,
         CancellationToken cancellationToken = default)
     {
-        var files = await dbContext.FileMetadata
+        var query = dbContext.FileMetadata
             .AsNoTracking()
-            .Where(f => f.UploadedById == userId)
-            .ToListAsync(cancellationToken);
+            .Where(f => f.UploadedById == userId);
+
+        // Filter by folder if specified
+        if (folderId.HasValue)
+        {
+            query = query.Where(f => f.FolderId == folderId.Value);
+        }
+
+        var files = await query.ToListAsync(cancellationToken);
 
         // Order in memory after materialization (SQLite doesn't support DateTimeOffset in ORDER BY)
         var orderedFiles = files.OrderByDescending(f => f.UploadedAt);

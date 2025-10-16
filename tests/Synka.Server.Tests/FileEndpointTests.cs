@@ -22,6 +22,8 @@ internal sealed class FileEndpointTests
         using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("test content"));
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         content.Add(fileContent, "file", "test.txt");
+        using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+        content.Add(folderIdContent, "folderId");
 
         // Act
         var response = await client.PostAsync("/api/v1/files", content);
@@ -42,6 +44,8 @@ internal sealed class FileEndpointTests
         using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("test file content"));
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         content.Add(fileContent, "file", "test.txt");
+        using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+        content.Add(folderIdContent, "folderId");
 
         // Act
         var response = await client.PostAsync("/api/v1/files", content);
@@ -81,6 +85,8 @@ internal sealed class FileEndpointTests
         using var client = factory.CreateClient();
 
         using var content = new MultipartFormDataContent();
+        using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+        content.Add(folderIdContent, "folderId");
 
         // Act
         var response = await client.PostAsync("/api/v1/files", content);
@@ -136,6 +142,8 @@ internal sealed class FileEndpointTests
         using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("test content"));
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         uploadContent.Add(fileContent, "file", "metadata-test.txt");
+        using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+        uploadContent.Add(folderIdContent, "folderId");
 
         var uploadResponse = await client.PostAsync("/api/v1/files", uploadContent);
         var uploadResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
@@ -217,6 +225,8 @@ internal sealed class FileEndpointTests
             using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes($"test content {i}"));
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
             uploadContent.Add(fileContent, "file", $"test{i}.txt");
+            using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+            uploadContent.Add(folderIdContent, "folderId");
             await client.PostAsync("/api/v1/files", uploadContent);
         }
 
@@ -278,6 +288,8 @@ internal sealed class FileEndpointTests
         using var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("test content"));
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         uploadContent.Add(fileContent, "file", "delete-test.txt");
+        using var folderIdContent = new StringContent(Guid.NewGuid().ToString());
+        uploadContent.Add(folderIdContent, "folderId");
 
         var uploadResponse = await client.PostAsync("/api/v1/files", uploadContent);
         var uploadResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
