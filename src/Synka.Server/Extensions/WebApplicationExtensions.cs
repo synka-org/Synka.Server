@@ -120,7 +120,15 @@ internal static class WebApplicationExtensions
                     return Results.Unauthorized();
                 }
 
-                var response = await fileUploadService.UploadFileAsync(userGuid, file, cancellationToken);
+                // Optional folderId from form data
+                Guid? folderId = null;
+                if (form.TryGetValue("folderId", out var folderIdValue) &&
+                    Guid.TryParse(folderIdValue, out var parsedFolderId))
+                {
+                    folderId = parsedFolderId;
+                }
+
+                var response = await fileUploadService.UploadFileAsync(userGuid, file, folderId, cancellationToken);
                 return Results.Ok(response);
             }
             catch (ArgumentException ex)
@@ -151,6 +159,7 @@ internal static class WebApplicationExtensions
         filesGroup.MapGet("/", async (
             HttpContext httpContext,
             IFileUploadService fileUploadService,
+            Guid? folderId,
             CancellationToken cancellationToken) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -159,7 +168,7 @@ internal static class WebApplicationExtensions
                 return Results.Unauthorized();
             }
 
-            var files = await fileUploadService.ListUserFilesAsync(userGuid, cancellationToken);
+            var files = await fileUploadService.ListUserFilesAsync(userGuid, folderId, cancellationToken);
             return Results.Ok(files);
         })
         .WithName("ListUserFiles");
