@@ -25,12 +25,20 @@ internal static class WebApplicationExtensions
     {
         using var scope = app.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
+
+        // Skip migrations for in-memory databases (used in tests)
+        // In-memory SQLite connections have "DataSource=:memory:" or "Data Source=:memory:"
+        var connectionString = database.Database.GetConnectionString();
+        if (connectionString?.Contains(":memory:", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return;
+        }
+
         database.Database.Migrate();
     }
-
     public static void MapAuthenticationEndpoints(this WebApplication app)
     {
-        var authGroup = app.MapGroup("/auth")
+        var authGroup = app.MapGroup("/api/v{version:apiVersion}/auth")
             .WithTags("Authentication");
 
         var identityEndpoints = authGroup.MapIdentityApi<ApplicationUserEntity>();
@@ -96,28 +104,33 @@ internal static class WebApplicationExtensions
                 return Results.BadRequest(new { error = "Request must be multipart/form-data" });
             }
 
-            var form = await httpContext.Request.ReadFormAsync(cancellationToken);
-            var file = form.Files.GetFile("file");
-
-            if (file is null)
-            {
-                return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
-            }
-
-            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null || !Guid.TryParse(userId, out var userGuid))
-            {
-                return Results.Unauthorized();
-            }
-
             try
             {
+                var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+                var file = form.Files.GetFile("file");
+
+                if (file is null)
+                {
+                    return Results.BadRequest(new { error = "No file provided. Use 'file' field name." });
+                }
+
+                var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId is null || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Results.Unauthorized();
+                }
+
                 var response = await fileUploadService.UploadFileAsync(userGuid, file, cancellationToken);
                 return Results.Ok(response);
             }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (InvalidDataException ex)
+            {
+                // Handle malformed form data
+                return Results.BadRequest(new { error = $"Invalid form data: {ex.Message}" });
             }
         })
         .WithName("UploadFile")
@@ -170,4 +183,3 @@ internal static class WebApplicationExtensions
         .WithName("DeleteFile");
     }
 }
-

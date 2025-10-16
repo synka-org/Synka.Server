@@ -22,13 +22,14 @@ public class FileMetadataEntity
 
     /// <summary>
     /// The folder containing this file.
+    /// Null if file is in user's root/not in a specific folder.
     /// </summary>
-    public Guid FolderId { get; set; }
+    public Guid? FolderId { get; set; }
 
     /// <summary>
     /// Navigation property to the folder.
     /// </summary>
-    public FolderEntity Folder { get; set; } = null!;
+    public FolderEntity? Folder { get; set; }
 
     /// <summary>
     /// Original filename.

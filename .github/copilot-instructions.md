@@ -43,6 +43,11 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - Registration endpoint (`/auth/register`) is admin-only
 - Fallback policy requires authenticated users unless explicitly marked `AllowAnonymous`
 
+### C# Coding Style
+- **Use `var` for local variable declarations** instead of explicit types when the type is clear from the assignment
+- Example: `var factory = new WebApplicationFactory<Program>()` instead of `WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>()`
+- Exception: Use explicit types when the type is not obvious from the right-hand side or when it improves readability
+
 ## Configuration & Integrations
 
 - **Database**: `appsettings.json` defines SQLite and Postgres connection strings; `Database:Provider` selects one

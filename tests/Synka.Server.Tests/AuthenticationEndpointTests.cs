@@ -14,12 +14,12 @@ internal sealed class AuthenticationEndpointTests
     public async Task Register_RequiresAuthentication()
     {
         // Arrange
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
         // Act
         var response = await client.PostAsJsonAsync(
-            "/auth/register",
+            "/api/v1/auth/register",
             new { email = $"user-{Guid.NewGuid():N}@synka.local", password = "Password1!" });
 
         // Assert
@@ -36,7 +36,7 @@ internal sealed class AuthenticationEndpointTests
 
         // Act
         var response = await client.PostAsJsonAsync(
-            "/auth/register",
+            "/api/v1/auth/register",
             new { email = $"user-{Guid.NewGuid():N}@synka.local", password = "Password1!" });
 
         // Assert
@@ -59,7 +59,7 @@ internal sealed class AuthenticationEndpointTests
         var request = new { email, password = "Password1!" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/auth/register", request);
+        var response = await client.PostAsJsonAsync("/api/v1/auth/register", request);
 
         // Assert
         await Assert.That(response.StatusCode)

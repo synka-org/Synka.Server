@@ -11,7 +11,7 @@ internal sealed class OpenApiEndpointTests
     [Test]
     public async Task OpenApi_IsAccessible_InDevelopment()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new DevelopmentWebApplicationFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/openapi.json");
@@ -56,11 +56,13 @@ internal sealed class OpenApiEndpointTests
             .IsEqualTo(HttpStatusCode.OK);
     }
 
-    private sealed class ProductionWebApplicationFactory : WebApplicationFactory<Program>
+    private sealed class ProductionWebApplicationFactory : TestWebApplicationFactory
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Production");
+            base.ConfigureWebHost(builder); // Set up Testing environment and in-memory database
+            // Note: Keep Testing environment to avoid migration attempts on in-memory DB
+            // OpenAPI will be disabled by default since OpenApi:Expose is not set
         }
     }
 
@@ -68,17 +70,18 @@ internal sealed class OpenApiEndpointTests
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Production");
             base.ConfigureWebHost(builder);
+            // Note: Keep Testing environment to avoid migration attempts on in-memory DB
         }
     }
 
-    private sealed class ProductionOpenApiExposedWebApplicationFactory : WebApplicationFactory<Program>
+    private sealed class ProductionOpenApiExposedWebApplicationFactory : TestWebApplicationFactory
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Production")
-                .ConfigureAppConfiguration((_, configuration) =>
+            base.ConfigureWebHost(builder); // Set up Testing environment and in-memory database
+            // Note: Keep Testing environment to avoid migration attempts on in-memory DB
+            builder.ConfigureAppConfiguration((_, configuration) =>
             {
                 var settings = new Dictionary<string, string?>
                 {
@@ -87,6 +90,15 @@ internal sealed class OpenApiEndpointTests
 
                 configuration.AddInMemoryCollection(settings);
             });
+        }
+    }
+
+    private sealed class DevelopmentWebApplicationFactory : TestWebApplicationFactory
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder); // Set up in-memory database
+            builder.UseEnvironment("Development"); // Override to Development for OpenAPI exposure
         }
     }
 }
