@@ -47,6 +47,7 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - **Use `var` for local variable declarations** instead of explicit types when the type is clear from the assignment
 - Example: `var factory = new WebApplicationFactory<Program>()` instead of `WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>()`
 - Exception: Use explicit types when the type is not obvious from the right-hand side or when it improves readability
+- **One type per file.** When adding or modifying types, ensure each record/class/struct/interface lives in its own file; do not group multiple type declarations together.
 
 ### Logging
 - **ALWAYS use LoggerMessage delegates** for structured logging instead of `ILogger` extension methods
