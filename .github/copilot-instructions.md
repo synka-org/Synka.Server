@@ -181,7 +181,10 @@ dotnet format analyzers --verify-no-changes --verbosity diagnostic
 
 2. **After Creating Feature Branch:**
    - Make your code changes
-   - Run tests to verify
+  - Run tests to verify
+  - Run `dotnet format --verify-no-changes` and `dotnet format analyzers --verify-no-changes`
+    - If either command fails, fix the issues locally using `dotnet format` and/or `dotnet format analyzers`
+    - Re-run both verification commands until they succeed before asking about commits
    - Present summary of changes to user
 
 3. **When User Says "commit" or "yes" to commit:**
