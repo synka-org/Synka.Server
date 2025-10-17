@@ -61,7 +61,7 @@ internal static class WebApplicationBuilderExtensions
             }
         };
 
-    builder.Services.AddDbContext<SynkaDbContext>(configureOptions);
+        builder.Services.AddDbContext<SynkaDbContext>(configureOptions);
     }
 
     public static void AddSynkaAuthentication(this WebApplicationBuilder builder)
