@@ -48,6 +48,29 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - Example: `var factory = new WebApplicationFactory<Program>()` instead of `WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>()`
 - Exception: Use explicit types when the type is not obvious from the right-hand side or when it improves readability
 
+### Logging
+- **ALWAYS use LoggerMessage delegates** for structured logging instead of `ILogger` extension methods
+- Create logger delegates in `Services/Logging/[ServiceName]Loggers.cs` files
+- Example:
+  ```csharp
+  internal static partial class MyServiceLoggers
+  {
+      [LoggerMessage(
+          EventId = 1,
+          Level = LogLevel.Information,
+          Message = "Processing item {ItemId}")]
+      public static partial void LogItemProcessing(
+          ILogger logger,
+          Guid itemId,
+          Exception? exception);
+  }
+  ```
+- Use the delegates in your service:
+  ```csharp
+  MyServiceLoggers.LogItemProcessing(logger, itemId, null);
+  ```
+- Benefits: compile-time safety, better performance, consistent structured logging
+
 ## Configuration & Integrations
 
 - **Database**: `appsettings.json` defines SQLite and Postgres connection strings; `Database:Provider` selects one

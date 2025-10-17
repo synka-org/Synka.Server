@@ -48,7 +48,7 @@ internal static class WebApplicationBuilderExtensions
         var connectionString = providerAccessor.ConnectionString
             ?? throw new InvalidOperationException($"Connection string '{providerAccessor.ConnectionStringName}' was not found.");
 
-        builder.Services.AddDbContext<SynkaDbContext>(options =>
+        Action<DbContextOptionsBuilder> configureOptions = options =>
         {
             switch (providerAccessor.Provider)
             {
@@ -59,7 +59,9 @@ internal static class WebApplicationBuilderExtensions
                     options.UseSqlite(connectionString);
                     break;
             }
-        });
+        };
+
+    builder.Services.AddDbContext<SynkaDbContext>(configureOptions);
     }
 
     public static void AddSynkaAuthentication(this WebApplicationBuilder builder)
@@ -126,5 +128,12 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddScoped<IFileService, FileService>();
         builder.Services.AddScoped<IFolderService, FolderService>();
         builder.Services.AddScoped<IFolderAccessService, FolderAccessService>();
+        builder.Services.AddScoped<IFileSystemScannerService, FileSystemScannerService>();
+
+        // Background service for automatic folder watching
+        // Register as both IHostedService and IFileSystemWatcherManager (singleton)
+        builder.Services.AddSingleton<FileSystemWatcherHostedService>();
+        builder.Services.AddSingleton<IFileSystemWatcherManager>(sp => sp.GetRequiredService<FileSystemWatcherHostedService>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<FileSystemWatcherHostedService>());
     }
 }
