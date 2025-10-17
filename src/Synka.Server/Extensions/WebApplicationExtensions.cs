@@ -194,5 +194,62 @@ internal static class WebApplicationExtensions
             }
         })
         .WithName("DeleteFile");
+
+        // Scan a specific folder for changes
+        filesGroup.MapPost("/scan/{folderId:guid}", async (
+            Guid folderId,
+            IFileSystemScannerService scannerService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await scannerService.ScanFolderAsync(folderId, cancellationToken);
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.NotFound(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        })
+        .WithName("ScanFolder");
+
+        // Scan all user folders
+        filesGroup.MapPost("/scan", async (
+            IFileSystemScannerService scannerService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await scannerService.ScanAllUserFoldersAsync(cancellationToken);
+                return Results.Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        })
+        .WithName("ScanAllUserFolders");
+
+        // Scan shared folders (admin only)
+        filesGroup.MapPost("/scan/shared", async (
+            IFileSystemScannerService scannerService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await scannerService.ScanSharedFoldersAsync(cancellationToken);
+                return Results.Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        })
+        .WithName("ScanSharedFolders")
+        .RequireAuthorization(AuthorizationPolicies.AdministratorOnly);
     }
 }

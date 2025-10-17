@@ -48,6 +48,29 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - Example: `var factory = new WebApplicationFactory<Program>()` instead of `WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>()`
 - Exception: Use explicit types when the type is not obvious from the right-hand side or when it improves readability
 
+### Logging
+- **ALWAYS use LoggerMessage delegates** for structured logging instead of `ILogger` extension methods
+- Create logger delegates in `Services/Logging/[ServiceName]Loggers.cs` files
+- Example:
+  ```csharp
+  internal static partial class MyServiceLoggers
+  {
+      [LoggerMessage(
+          EventId = 1,
+          Level = LogLevel.Information,
+          Message = "Processing item {ItemId}")]
+      public static partial void LogItemProcessing(
+          ILogger logger,
+          Guid itemId,
+          Exception? exception);
+  }
+  ```
+- Use the delegates in your service:
+  ```csharp
+  MyServiceLoggers.LogItemProcessing(logger, itemId, null);
+  ```
+- Benefits: compile-time safety, better performance, consistent structured logging
+
 ## Configuration & Integrations
 
 - **Database**: `appsettings.json` defines SQLite and Postgres connection strings; `Database:Provider` selects one
@@ -158,7 +181,10 @@ dotnet format analyzers --verify-no-changes --verbosity diagnostic
 
 2. **After Creating Feature Branch:**
    - Make your code changes
-   - Run tests to verify
+  - Run tests to verify
+  - Run `dotnet format --verify-no-changes` and `dotnet format analyzers --verify-no-changes`
+    - If either command fails, fix the issues locally using `dotnet format` and/or `dotnet format analyzers`
+    - Re-run both verification commands until they succeed before asking about commits
    - Present summary of changes to user
 
 3. **When User Says "commit" or "yes" to commit:**
