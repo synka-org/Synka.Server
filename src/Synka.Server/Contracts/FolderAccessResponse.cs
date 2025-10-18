@@ -1,5 +1,3 @@
-using Synka.Server.Data.Entities;
-
 namespace Synka.Server.Contracts;
 
 public sealed record FolderAccessResponse(
@@ -9,6 +7,6 @@ public sealed record FolderAccessResponse(
     string UserName,
     Guid GrantedById,
     string GrantedByName,
-    FolderAccessLevel Permission,
+    FolderAccessPermissionLevel Permission,
     DateTimeOffset GrantedAt,
     DateTimeOffset? ExpiresAt);
