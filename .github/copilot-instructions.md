@@ -29,6 +29,7 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - **Endpoint handlers MUST be lightweight**—business logic belongs in `Services/`. Handlers only orchestrate service calls and map results to HTTP responses.
 - **DTOs** live in `Contracts/` with `Request`/`Response` suffixes (e.g., `ConfigurationRequest`, `ServiceManifestResponse`)
 - **Entities** live in `Data/Entities/` (e.g., `ApplicationUserEntity`)
+- **Project query results directly to contracts.** When database data flows into an HTTP response, use EF Core projection (`Select`) or dedicated mappers at query time so the database call materializes the response shape instead of returning tracked entities.
 - **Services** use primary constructors and access constructor parameters directly without creating private fields:
   ```csharp
   public sealed class MyService(IDependency dependency) : IMyService

@@ -1,3 +1,4 @@
+using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
@@ -40,7 +41,7 @@ public interface IFolderAccessService
         Guid folderId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<FolderAccessEntity>> GetFolderAccessListAsync(
+    Task<IReadOnlyList<FolderAccessResponse>> GetFolderAccessListAsync(
         Guid folderId,
         CancellationToken cancellationToken = default);
 

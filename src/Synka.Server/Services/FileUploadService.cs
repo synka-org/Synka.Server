@@ -141,24 +141,19 @@ public sealed class FileUploadService(
         Guid fileId,
         CancellationToken cancellationToken = default)
     {
-        var metadata = await dbContext.FileMetadata
+        return await dbContext.FileMetadata
             .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.Id == fileId, cancellationToken);
-
-        if (metadata is null)
-        {
-            return null;
-        }
-
-        return new FileMetadataResponse(
-            metadata.Id,
-            metadata.FileName,
-            metadata.ContentType,
-            metadata.SizeBytes,
-            metadata.StoragePath,
-            metadata.ContentHash,
-            metadata.UploadedAt,
-            metadata.UpdatedAt);
+            .Where(f => f.Id == fileId)
+            .Select(f => new FileMetadataResponse(
+                f.Id,
+                f.FileName,
+                f.ContentType,
+                f.SizeBytes,
+                f.StoragePath,
+                f.ContentHash,
+                f.UploadedAt,
+                f.UpdatedAt))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>
@@ -182,20 +177,22 @@ public sealed class FileUploadService(
             query = query.Where(f => f.FolderId == folderId.Value);
         }
 
-        var files = await query.ToListAsync(cancellationToken);
+        var files = await query
+            .Select(f => new FileMetadataResponse(
+                f.Id,
+                f.FileName,
+                f.ContentType,
+                f.SizeBytes,
+                f.StoragePath,
+                f.ContentHash,
+                f.UploadedAt,
+                f.UpdatedAt))
+            .ToListAsync(cancellationToken);
 
-        // Order in memory after materialization (SQLite doesn't support DateTimeOffset in ORDER BY)
-        var orderedFiles = files.OrderByDescending(f => f.UploadedAt);
-
-        return orderedFiles.Select(metadata => new FileMetadataResponse(
-            metadata.Id,
-            metadata.FileName,
-            metadata.ContentType,
-            metadata.SizeBytes,
-            metadata.StoragePath,
-            metadata.ContentHash,
-            metadata.UploadedAt,
-            metadata.UpdatedAt));
+        // Order in memory after projection (SQLite doesn't support DateTimeOffset in ORDER BY)
+        return files
+            .OrderByDescending(file => file.UploadedAt)
+            .ToList();
     }
 
     /// <summary>

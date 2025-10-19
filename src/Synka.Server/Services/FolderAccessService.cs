@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
 
@@ -152,61 +153,58 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         }
     }
 
-    public async Task<IReadOnlyList<FolderAccessEntity>> GetFolderAccessListAsync(
+    public async Task<IReadOnlyList<FolderAccessResponse>> GetFolderAccessListAsync(
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var grants = await context.FolderAccess
+        var accessRows = await context.FolderAccess
             .AsNoTracking()
-            .Where(a => a.FolderId == folderId)
+            .Where(access => access.FolderId == folderId)
+            .Select(access => new
+            {
+                access.Id,
+                access.FolderId,
+                access.UserId,
+                access.GrantedById,
+                access.Permission,
+                access.GrantedAt,
+                access.ExpiresAt
+            })
             .ToListAsync(cancellationToken);
 
-        if (grants.Count == 0)
+        if (accessRows.Count == 0)
         {
             return [];
         }
 
-        var userIds = grants
-            .Select(grant => grant.UserId)
+        var userIds = accessRows
+            .Select(row => row.UserId)
+            .Concat(accessRows.Select(row => row.GrantedById))
             .Distinct()
             .ToList();
 
-        var users = userIds.Count == 0
-            ? new Dictionary<Guid, ApplicationUserEntity>()
+        var userLookup = userIds.Count == 0
+            ? new Dictionary<Guid, string>()
             : await context.Users
                 .AsNoTracking()
                 .Where(user => userIds.Contains(user.Id))
-                .ToDictionaryAsync(user => user.Id, cancellationToken);
+                .Select(user => new { user.Id, user.UserName })
+                .ToDictionaryAsync(user => user.Id, user => user.UserName ?? string.Empty, cancellationToken);
 
-        var grantorIds = grants
-            .Select(grant => grant.GrantedById)
-            .Distinct()
-            .ToList();
-
-        var grantors = grantorIds.Count == 0
-            ? new Dictionary<Guid, ApplicationUserEntity>()
-            : await context.Users
-                .AsNoTracking()
-                .Where(user => grantorIds.Contains(user.Id))
-                .ToDictionaryAsync(user => user.Id, cancellationToken);
-
-        foreach (var grant in grants)
-        {
-            if (users.TryGetValue(grant.UserId, out var user))
-            {
-                grant.User = user;
-            }
-
-            if (grantors.TryGetValue(grant.GrantedById, out var grantor))
-            {
-                grant.GrantedBy = grantor;
-            }
-        }
-
-        return grants
-            .Where(grant => GrantIsActive(grant, now))
-            .OrderBy(grant => grant.User?.UserName ?? string.Empty)
+        return accessRows
+            .Where(row => row.ExpiresAt == null || row.ExpiresAt > now)
+            .Select(row => new FolderAccessResponse(
+                row.Id,
+                row.FolderId,
+                row.UserId,
+                userLookup.TryGetValue(row.UserId, out var userName) ? userName : string.Empty,
+                row.GrantedById,
+                userLookup.TryGetValue(row.GrantedById, out var grantorName) ? grantorName : string.Empty,
+                (FolderAccessPermissionLevel)row.Permission,
+                row.GrantedAt,
+                row.ExpiresAt))
+            .OrderBy(access => access.UserName, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
@@ -268,7 +266,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
     }
 
     private static bool GrantIsActive(FolderAccessEntity grant, DateTimeOffset now) =>
-        GrantIsActive(grant.ExpiresAt, now);
+        !grant.ExpiresAt.HasValue || grant.ExpiresAt.Value > now;
 
     private static bool GrantIsActive(DateTimeOffset? expiresAt, DateTimeOffset now) =>
         !expiresAt.HasValue || expiresAt.Value > now;
