@@ -1,3 +1,4 @@
+using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
@@ -11,22 +12,22 @@ public interface IFolderService
         string? physicalPath,
         CancellationToken cancellationToken = default);
 
-    Task<FolderEntity> GetFolderAsync(
+    Task<FolderResponse> GetFolderAsync(
         Guid folderId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<FolderEntity>> GetUserRootFoldersAsync(
+    Task<IReadOnlyList<FolderResponse>> GetUserRootFoldersAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<FolderEntity>> GetSharedRootFoldersAsync(
+    Task<IReadOnlyList<FolderResponse>> GetSharedRootFoldersAsync(
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<FolderEntity>> GetSubfoldersAsync(
+    Task<IReadOnlyList<FolderResponse>> GetSubfoldersAsync(
         Guid parentFolderId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<FolderEntity>> GetAccessibleFoldersAsync(
+    Task<IReadOnlyList<FolderResponse>> GetAccessibleFoldersAsync(
         Guid userId,
         Guid? parentFolderId = null,
         CancellationToken cancellationToken = default);
