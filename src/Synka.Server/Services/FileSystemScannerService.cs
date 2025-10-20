@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
@@ -12,13 +11,13 @@ namespace Synka.Server.Services;
 /// Service for scanning the file system and synchronizing changes with the database.
 /// </summary>
 /// <param name="dbContext">Database context.</param>
-/// <param name="httpContextAccessor">HTTP context accessor.</param>
+/// <param name="currentUserAccessor">Accessor for retrieving current user information.</param>
 /// <param name="watcherManager">File system watcher manager for dynamic watcher registration.</param>
 /// <param name="logger">Logger instance.</param>
 /// <param name="timeProvider">Time abstraction for timestamp generation.</param>
 public sealed class FileSystemScannerService(
     SynkaDbContext dbContext,
-    IHttpContextAccessor httpContextAccessor,
+    ICurrentUserAccessor currentUserAccessor,
     IFileSystemWatcherManager watcherManager,
     ILogger<FileSystemScannerService> logger,
     TimeProvider timeProvider) : IFileSystemScannerService
@@ -35,7 +34,7 @@ public sealed class FileSystemScannerService(
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
         var folder = await dbContext.Folders
             .Include(f => f.Files)
             .Include(f => f.ChildFolders)
@@ -63,7 +62,7 @@ public sealed class FileSystemScannerService(
     public async Task<FileSystemScanResult> ScanAllUserFoldersAsync(
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
         var rootFolders = await dbContext.Folders
             .Include(f => f.Files)
             .Include(f => f.ChildFolders)
@@ -91,7 +90,7 @@ public sealed class FileSystemScannerService(
     public async Task<FileSystemScanResult> ScanSharedFoldersAsync(
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
         var sharedRootFolders = await dbContext.Folders
             .Include(f => f.Files)
             .Include(f => f.ChildFolders)
@@ -389,22 +388,6 @@ public sealed class FileSystemScannerService(
             ".XML" => "application/xml",
             _ => "application/octet-stream"
         };
-    }
-
-    private Guid ExtractUserId()
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null)
-        {
-            throw new UnauthorizedAccessException("HTTP context is not available");
-        }
-
-        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID could not be determined from the current context");
-        }
-        return userId;
     }
 
     private sealed class ScanResultBuilder

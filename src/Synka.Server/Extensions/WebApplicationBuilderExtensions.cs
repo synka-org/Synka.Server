@@ -125,6 +125,7 @@ internal static class WebApplicationBuilderExtensions
 
     public static void AddSynkaApplicationServices(this WebApplicationBuilder builder)
     {
+        builder.Services.AddScoped<ICurrentUserAccessor, HttpContextCurrentUserAccessor>();
         builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
         builder.Services.AddScoped<IFileService, FileService>();
         builder.Services.AddScoped<IFolderService, FolderService>();

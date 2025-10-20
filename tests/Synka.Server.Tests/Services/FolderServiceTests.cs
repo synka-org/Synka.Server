@@ -12,6 +12,7 @@ internal sealed class FolderServiceTests : IDisposable
     private readonly TestWebApplicationFactory _factory;
     private readonly IServiceScope _scope;
     private readonly SynkaDbContext _context;
+    private readonly TestCurrentUserAccessor _currentUserAccessor;
     private readonly FolderService _folderService;
 
     public FolderServiceTests()
@@ -20,7 +21,8 @@ internal sealed class FolderServiceTests : IDisposable
         _scope = _factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
         var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
-        _folderService = new FolderService(_context, timeProvider);
+        _currentUserAccessor = new TestCurrentUserAccessor();
+        _folderService = new FolderService(_context, timeProvider, _currentUserAccessor);
 
         // Disable foreign key constraints for testing
         // (Database is already created by TestWebApplicationFactory)
@@ -181,7 +183,8 @@ internal sealed class FolderServiceTests : IDisposable
         await _folderService.CreateFolderAsync(userId, "Subfolder", userRoot1.Id, null);
 
         // Act
-        var roots = await _folderService.GetUserRootFoldersAsync(userId);
+        _currentUserAccessor.CurrentUserId = userId;
+        var roots = await _folderService.GetUserRootFoldersAsync();
 
         // Assert
         await Assert.That(roots).HasCount().EqualTo(2);
@@ -366,7 +369,8 @@ internal sealed class FolderServiceTests : IDisposable
         await _folderService.CreateFolderAsync(Guid.NewGuid(), "NotOwned", null, "/notowned");
 
         // Act
-        var accessible = await _folderService.GetAccessibleFoldersAsync(userId);
+        _currentUserAccessor.CurrentUserId = userId;
+        var accessible = await _folderService.GetAccessibleFoldersAsync();
 
         // Assert
         await Assert.That(accessible).HasCount().EqualTo(1);
@@ -381,7 +385,8 @@ internal sealed class FolderServiceTests : IDisposable
         var sharedRoot = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
 
         // Act
-        var accessible = await _folderService.GetAccessibleFoldersAsync(userId);
+        _currentUserAccessor.CurrentUserId = userId;
+        var accessible = await _folderService.GetAccessibleFoldersAsync();
 
         // Assert
         await Assert.That(accessible).HasCount().EqualTo(1);
@@ -397,7 +402,8 @@ internal sealed class FolderServiceTests : IDisposable
         await _folderService.DeleteFolderAsync(folder.Id, softDelete: true);
 
         // Act
-        var accessible = await _folderService.GetAccessibleFoldersAsync(userId);
+        _currentUserAccessor.CurrentUserId = userId;
+        var accessible = await _folderService.GetAccessibleFoldersAsync();
 
         // Assert
         await Assert.That(accessible).IsEmpty();
@@ -423,7 +429,8 @@ internal sealed class FolderServiceTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var accessible = await _folderService.GetAccessibleFoldersAsync(userId);
+        _currentUserAccessor.CurrentUserId = userId;
+        var accessible = await _folderService.GetAccessibleFoldersAsync();
 
         // Assert
         await Assert.That(accessible).HasCount().EqualTo(1);

@@ -13,6 +13,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     private readonly TestWebApplicationFactory _factory;
     private readonly IServiceScope _scope;
     private readonly SynkaDbContext _context;
+    private readonly TestCurrentUserAccessor _currentUserAccessor;
     private readonly FolderService _folderService;
     private readonly FolderAccessService _accessService;
 
@@ -22,7 +23,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
         _scope = _factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
         var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
-        _folderService = new FolderService(_context, timeProvider);
+        _currentUserAccessor = new TestCurrentUserAccessor();
+        _folderService = new FolderService(_context, timeProvider, _currentUserAccessor);
         _accessService = new FolderAccessService(_context, timeProvider);
 
         // Disable foreign key constraints for testing
