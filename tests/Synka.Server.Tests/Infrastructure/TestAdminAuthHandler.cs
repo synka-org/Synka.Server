@@ -5,8 +5,8 @@ namespace Synka.Server.Tests.Infrastructure;
 
 internal static class TestAuthClaimExtensions
 {
-    public static void AddAdministratorRole(this ICollection<Claim> claims)
+    public static void AddAdminRole(this ICollection<Claim> claims)
     {
-        claims.Add(new Claim(ClaimTypes.Role, RoleNames.Administrator));
+        claims.Add(new Claim(ClaimTypes.Role, RoleNames.Admin));
     }
 }
