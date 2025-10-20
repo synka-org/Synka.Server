@@ -23,7 +23,6 @@ jobs:
       matrix:
         include:
         - language: csharp
-          build-mode: manual
 
     steps:
     - name: Checkout repository
@@ -38,7 +37,6 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
 
     - name: Restore dependencies
       run: dotnet restore Synka.slnx
