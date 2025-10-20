@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Data;
 using Synka.Server.Services.Logging;
@@ -61,6 +60,7 @@ public sealed class FileSystemWatcherHostedService(
                 watcher.Error += (sender, e) => OnWatcherError(instance, e);
 
                 _watchers[folder.Id] = instance;
+
                 FileSystemWatcherHostedServiceLoggers.LogFolderWatchStarted(logger, folder.Id, folder.PhysicalPath, null);
             }
             catch (UnauthorizedAccessException ex)
@@ -179,6 +179,7 @@ public sealed class FileSystemWatcherHostedService(
     private void OnWatcherError(FolderWatcherInstance instance, ErrorEventArgs e)
     {
         var exception = e.GetException();
+
         FileSystemWatcherHostedServiceLoggers.LogWatcherError(
             logger, instance.FolderId, instance.PhysicalPath, exception);
     }
@@ -234,7 +235,7 @@ public sealed class FileSystemWatcherHostedService(
         private readonly FileSystemWatcher _watcher;
         private readonly Timer _debounceTimer;
         private Action? _pendingAction;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         public Guid FolderId { get; }
         public string PhysicalPath { get; }
@@ -246,6 +247,7 @@ public sealed class FileSystemWatcherHostedService(
             PhysicalPath = physicalPath;
             OwnerId = ownerId;
             _watcher = watcher;
+
             // Debounce timer: wait 2 seconds of inactivity before triggering scan
             _debounceTimer = new Timer(OnDebounceTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
         }
@@ -255,6 +257,7 @@ public sealed class FileSystemWatcherHostedService(
             lock (_lock)
             {
                 _pendingAction = action;
+
                 // Reset the timer - scan will trigger after 2 seconds of no changes
                 _debounceTimer.Change(2000, Timeout.Infinite);
             }
@@ -262,7 +265,8 @@ public sealed class FileSystemWatcherHostedService(
 
         private void OnDebounceTimerElapsed(object? state)
         {
-            Action? actionToExecute = null;
+            Action? actionToExecute;
+
             lock (_lock)
             {
                 actionToExecute = _pendingAction;

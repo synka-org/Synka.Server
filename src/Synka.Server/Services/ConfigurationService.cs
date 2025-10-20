@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
 
 public sealed class ConfigurationService(
-    IConfigurationStateService configurationStateService,
     UserManager<ApplicationUserEntity> userManager) : IConfigurationService
 {
     public async Task<IResult> ConfigureAsync(
@@ -15,7 +15,7 @@ public sealed class ConfigurationService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var requiresConfiguration = await configurationStateService.RequiresConfigurationAsync(cancellationToken);
+        var requiresConfiguration = await RequiresConfigurationAsync(cancellationToken);
 
         if (!requiresConfiguration)
         {
@@ -47,5 +47,22 @@ public sealed class ConfigurationService(
         }
 
         return Results.Ok();
+    }
+
+    public async Task<IResult> GetServiceManifestAsync(CancellationToken cancellationToken = default)
+    {
+        var requiresConfiguration = await RequiresConfigurationAsync(cancellationToken);
+
+        return TypedResults.Ok(new ServiceManifestResponse(
+            Service: "Synka.Server",
+            Version: typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
+            RequiresConfiguration: requiresConfiguration));
+    }
+
+    private async Task<bool> RequiresConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        var hasUsers = await userManager.Users.AnyAsync(cancellationToken);
+
+        return !hasUsers;
     }
 }

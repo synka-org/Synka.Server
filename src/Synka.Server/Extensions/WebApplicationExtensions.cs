@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -68,9 +66,9 @@ internal static class WebApplicationExtensions
     public static void MapServiceManifestEndpoint(this WebApplication app)
     {
         app.MapGet("/api/v{version:apiVersion}/manifest", async (
-            IConfigurationStateService configurationStateService,
+            IConfigurationService configurationService,
             CancellationToken cancellationToken) =>
-            await configurationStateService.GetServiceManifestAsync(cancellationToken))
+            await configurationService.GetServiceManifestAsync(cancellationToken))
             .WithName("GetServiceManifest")
             .AllowAnonymous();
     }
