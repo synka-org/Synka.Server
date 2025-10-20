@@ -50,6 +50,7 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
 - Exception: Use explicit types when the type is not obvious from the right-hand side or when it improves readability
 - **One type per file.** When adding or modifying types, ensure each record/class/struct/interface lives in its own file; do not group multiple type declarations together.
 - **Contracts never depend on entity types.** Do not reference `Synka.Server.Data` or entity-layer enums from `Contracts/`; declare contract-specific equivalents as needed.
+- **Always obtain timestamps through the injected `TimeProvider`.** Services, entities, and tests should consume `TimeProvider` (directly or via `SynkaDbContext` timestamp handling) rather than calling `DateTimeOffset.UtcNow` so clocks remain mockable.
 
 ### Logging
 - **ALWAYS use LoggerMessage delegates** for structured logging instead of `ILogger` extension methods

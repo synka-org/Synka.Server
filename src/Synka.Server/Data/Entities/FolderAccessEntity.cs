@@ -49,7 +49,7 @@ public class FolderAccessEntity
     /// <summary>
     /// When access was granted.
     /// </summary>
-    public DateTimeOffset GrantedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset GrantedAt { get; set; }
 
     /// <summary>
     /// Optional expiration date for temporary access.

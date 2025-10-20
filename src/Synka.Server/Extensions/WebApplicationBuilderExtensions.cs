@@ -20,6 +20,7 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddHealthChecks();
         builder.Services.AddOpenApi();
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddSingleton(TimeProvider.System);
 
         // Add API versioning
         builder.Services.AddApiVersioning(options =>

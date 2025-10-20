@@ -64,7 +64,7 @@ public class FolderEntity
     /// <summary>
     /// Creation timestamp.
     /// </summary>
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// Last modification timestamp.

@@ -64,7 +64,7 @@ public class FileMetadataEntity
     /// <summary>
     /// When the file was uploaded.
     /// </summary>
-    public DateTimeOffset UploadedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UploadedAt { get; set; }
 
     /// <summary>
     /// Last time metadata was updated.

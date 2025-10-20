@@ -5,7 +5,7 @@ using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
 
-public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessService
+public sealed class FolderAccessService(SynkaDbContext context, TimeProvider timeProvider) : IFolderAccessService
 {
     public async Task<bool> HasAccessAsync(
         Guid userId,
@@ -44,7 +44,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         }
 
         // Check direct access grant
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         var directGrants = await context.FolderAccess
             .AsNoTracking()
             .Where(a => a.FolderId == folderId && a.UserId == userId)
@@ -110,6 +110,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
             UserId = userId,
             GrantedById = grantedById,
             Permission = permission,
+            GrantedAt = timeProvider.GetUtcNow(),
             ExpiresAt = expiresAt
         };
 
@@ -157,7 +158,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         var accessRows = await context.FolderAccess
             .AsNoTracking()
             .Where(access => access.FolderId == folderId)
@@ -213,7 +214,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
         FolderAccessLevel? minimumPermission = null,
         CancellationToken cancellationToken = default)
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
 
         // Get folders owned by user
         var ownedFolders = await context.Folders

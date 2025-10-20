@@ -15,11 +15,13 @@ namespace Synka.Server.Services;
 /// <param name="httpContextAccessor">HTTP context accessor.</param>
 /// <param name="watcherManager">File system watcher manager for dynamic watcher registration.</param>
 /// <param name="logger">Logger instance.</param>
+/// <param name="timeProvider">Time abstraction for timestamp generation.</param>
 public sealed class FileSystemScannerService(
     SynkaDbContext dbContext,
     IHttpContextAccessor httpContextAccessor,
     IFileSystemWatcherManager watcherManager,
-    ILogger<FileSystemScannerService> logger) : IFileSystemScannerService
+    ILogger<FileSystemScannerService> logger,
+    TimeProvider timeProvider) : IFileSystemScannerService
 {
     /// <summary>
     /// Scans a folder and its subfolders for changes and updates the database.
@@ -183,7 +185,7 @@ public sealed class FileSystemScannerService(
         {
             var file = filesInDb[fileName!];
             file.IsDeleted = true;
-            file.UpdatedAt = DateTimeOffset.UtcNow;
+            file.UpdatedAt = timeProvider.GetUtcNow();
             result.IncrementFilesDeleted();
             FileSystemScannerLoggers.LogFileMarkedDeleted(logger, file.Id, file.FileName, null);
         }
@@ -227,6 +229,7 @@ public sealed class FileSystemScannerService(
         var fileInfo = new FileInfo(filePath);
         var contentHash = await ComputeFileHashAsync(filePath, cancellationToken);
 
+        var uploadedAt = timeProvider.GetUtcNow();
         var fileMetadata = new FileMetadataEntity
         {
             Id = Guid.NewGuid(),
@@ -237,7 +240,7 @@ public sealed class FileSystemScannerService(
             SizeBytes = fileInfo.Length,
             StoragePath = filePath,
             ContentHash = contentHash,
-            UploadedAt = DateTimeOffset.UtcNow,
+            UploadedAt = uploadedAt,
             IsDeleted = false
         };
 
@@ -256,7 +259,7 @@ public sealed class FileSystemScannerService(
     {
         file.SizeBytes = fileInfo.Length;
         file.ContentHash = await ComputeFileHashAsync(filePath, cancellationToken);
-        file.UpdatedAt = DateTimeOffset.UtcNow;
+        file.UpdatedAt = timeProvider.GetUtcNow();
 
         result.IncrementFilesUpdated();
 
@@ -307,7 +310,7 @@ public sealed class FileSystemScannerService(
         {
             var subfolder = subfoldersInDb[subfolderName!];
             subfolder.IsDeleted = true;
-            subfolder.UpdatedAt = DateTimeOffset.UtcNow;
+            subfolder.UpdatedAt = timeProvider.GetUtcNow();
             result.IncrementFoldersDeleted();
             FileSystemScannerLoggers.LogFolderMarkedDeleted(logger, subfolder.Id, subfolder.Name, null);
 
@@ -338,7 +341,7 @@ public sealed class FileSystemScannerService(
             Name = folderName,
             PhysicalPath = folderPath,
             IsDeleted = false,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = timeProvider.GetUtcNow()
         };
 
         dbContext.Folders.Add(newFolder);
