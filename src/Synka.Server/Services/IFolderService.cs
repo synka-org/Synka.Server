@@ -17,7 +17,6 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FolderResponse>> GetUserRootFoldersAsync(
-        Guid userId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FolderResponse>> GetSharedRootFoldersAsync(
@@ -28,7 +27,6 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FolderResponse>> GetAccessibleFoldersAsync(
-        Guid userId,
         Guid? parentFolderId = null,
         CancellationToken cancellationToken = default);
 

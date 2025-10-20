@@ -6,7 +6,7 @@ using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
 
-public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider) : IFolderService
+public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider, ICurrentUserAccessor currentUserAccessor) : IFolderService
 {
     public async Task<FolderEntity> CreateFolderAsync(
         Guid? ownerId,
@@ -73,9 +73,10 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
     }
 
     public async Task<IReadOnlyList<FolderResponse>> GetUserRootFoldersAsync(
-        Guid userId,
         CancellationToken cancellationToken = default)
     {
+        var userId = currentUserAccessor.GetCurrentUserId();
+
         return await context.Folders
             .Where(f => f.OwnerId == userId && f.ParentFolderId == null && !f.IsDeleted)
             .OrderBy(f => f.Name)
@@ -105,10 +106,11 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
     }
 
     public async Task<IReadOnlyList<FolderResponse>> GetAccessibleFoldersAsync(
-        Guid userId,
         Guid? parentFolderId = null,
         CancellationToken cancellationToken = default)
     {
+        var userId = currentUserAccessor.GetCurrentUserId();
+
         // Get folders owned by the user
         var ownedFolders = await context.Folders
             .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId && f.OwnerId == userId)

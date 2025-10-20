@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
@@ -12,13 +11,13 @@ namespace Synka.Server.Services;
 /// </summary>
 /// <param name="dbContext">Database context.</param>
 /// <param name="configuration">Application configuration.</param>
-/// <param name="httpContextAccessor">HTTP context accessor.</param>
+/// <param name="currentUserAccessor">Accessor for retrieving current user information.</param>
 /// <param name="logger">Logger instance.</param>
 /// <param name="timeProvider">Time abstraction for timestamp generation.</param>
 public sealed class FileService(
     SynkaDbContext dbContext,
     IConfiguration configuration,
-    IHttpContextAccessor httpContextAccessor,
+    ICurrentUserAccessor currentUserAccessor,
     ILogger<FileService> logger,
     TimeProvider timeProvider) : IFileService
 {
@@ -43,7 +42,7 @@ public sealed class FileService(
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
 
         if (file.Length == 0)
         {
@@ -149,7 +148,7 @@ public sealed class FileService(
         Guid fileId,
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
 
         return await dbContext.FileMetadata
             .AsNoTracking()
@@ -176,7 +175,7 @@ public sealed class FileService(
         Guid folderId,
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
 
         var files = await dbContext.FileMetadata
             .AsNoTracking()
@@ -208,7 +207,7 @@ public sealed class FileService(
         Guid fileId,
         CancellationToken cancellationToken = default)
     {
-        var userId = ExtractUserId();
+        var userId = currentUserAccessor.GetCurrentUserId();
 
         var metadata = await dbContext.FileMetadata
             .FirstOrDefaultAsync(f => f.Id == fileId && f.UploadedById == userId, cancellationToken);
@@ -239,21 +238,5 @@ public sealed class FileService(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return true;
-    }
-
-    private Guid ExtractUserId()
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null)
-        {
-            throw new UnauthorizedAccessException("HTTP context is not available");
-        }
-
-        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID could not be determined from the current context");
-        }
-        return userId;
     }
 }
