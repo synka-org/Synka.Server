@@ -4,7 +4,7 @@ namespace Synka.Server.Data.Entities;
 /// Represents a folder in the file tree.
 /// Can be shared (no owner) or user-specific (owned by a user).
 /// </summary>
-public class FolderEntity
+public class FolderEntity : IHasCreatedAt, IHasUpdatedAt
 {
     /// <summary>
     /// Primary key.
@@ -64,7 +64,7 @@ public class FolderEntity
     /// <summary>
     /// Creation timestamp.
     /// </summary>
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// Last modification timestamp.

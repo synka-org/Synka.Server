@@ -6,7 +6,7 @@ using Synka.Server.Data.Entities;
 
 namespace Synka.Server.Services;
 
-public sealed class FolderService(SynkaDbContext context) : IFolderService
+public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider) : IFolderService
 {
     public async Task<FolderEntity> CreateFolderAsync(
         Guid? ownerId,
@@ -50,7 +50,8 @@ public sealed class FolderService(SynkaDbContext context) : IFolderService
             OwnerId = ownerId,
             ParentFolderId = parentFolderId,
             Name = name,
-            PhysicalPath = physicalPath!
+            PhysicalPath = physicalPath!,
+            CreatedAt = timeProvider.GetUtcNow()
         };
 
         context.Folders.Add(folder);
@@ -123,7 +124,7 @@ public sealed class FolderService(SynkaDbContext context) : IFolderService
             .ToListAsync(cancellationToken);
 
         // Get folders explicitly shared with user
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         var sharedFolderIds = await context.FolderAccess
             .AsNoTracking()
             .Where(a => a.UserId == userId)

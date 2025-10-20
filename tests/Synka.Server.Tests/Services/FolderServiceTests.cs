@@ -19,7 +19,8 @@ internal sealed class FolderServiceTests : IDisposable
         _factory = new TestWebApplicationFactory();
         _scope = _factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
-        _folderService = new FolderService(_context);
+        var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
+        _folderService = new FolderService(_context, timeProvider);
 
         // Disable foreign key constraints for testing
         // (Database is already created by TestWebApplicationFactory)

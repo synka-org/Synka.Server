@@ -14,11 +14,13 @@ namespace Synka.Server.Services;
 /// <param name="configuration">Application configuration.</param>
 /// <param name="httpContextAccessor">HTTP context accessor.</param>
 /// <param name="logger">Logger instance.</param>
+/// <param name="timeProvider">Time abstraction for timestamp generation.</param>
 public sealed class FileService(
     SynkaDbContext dbContext,
     IConfiguration configuration,
     IHttpContextAccessor httpContextAccessor,
-    ILogger<FileService> logger) : IFileService
+    ILogger<FileService> logger,
+    TimeProvider timeProvider) : IFileService
 {
     /// <summary>
     /// 100 MB default
@@ -89,6 +91,7 @@ public sealed class FileService(
             }
 
             // Store metadata in database
+            var uploadedAt = timeProvider.GetUtcNow();
             var metadata = new FileMetadataEntity
             {
                 Id = fileId,
@@ -99,7 +102,7 @@ public sealed class FileService(
                 SizeBytes = file.Length,
                 StoragePath = storagePath,
                 ContentHash = contentHash,
-                UploadedAt = DateTimeOffset.UtcNow
+                UploadedAt = uploadedAt
             };
 
             dbContext.FileMetadata.Add(metadata);

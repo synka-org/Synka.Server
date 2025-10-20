@@ -33,6 +33,10 @@ For comprehensive Docker documentation, see [DOCKER.md](DOCKER.md).
 - Docker 20.10+ or compatible runtime
 - Docker Compose 2.0+ (optional, for orchestration)
 
+## 🧭 Engineering Practices
+
+- All production code obtains timestamps through the registered `TimeProvider`. Inject `TimeProvider` (or accept it via primary constructors) instead of calling `DateTimeOffset.UtcNow` directly so tests can replace the clock when needed. The `SynkaDbContext` also applies consistent timestamps during `SaveChanges` using this provider.
+
 ## 🚀 Getting started
 
 ### Running Locally

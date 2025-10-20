@@ -3,7 +3,7 @@ namespace Synka.Server.Data.Entities;
 /// <summary>
 /// Represents file metadata within a folder.
 /// </summary>
-public class FileMetadataEntity
+public class FileMetadataEntity : IHasUpdatedAt
 {
     /// <summary>
     /// Primary key.
@@ -64,7 +64,7 @@ public class FileMetadataEntity
     /// <summary>
     /// When the file was uploaded.
     /// </summary>
-    public DateTimeOffset UploadedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UploadedAt { get; set; }
 
     /// <summary>
     /// Last time metadata was updated.
