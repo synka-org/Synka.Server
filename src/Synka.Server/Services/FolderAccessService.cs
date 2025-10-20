@@ -185,7 +185,7 @@ public sealed class FolderAccessService(SynkaDbContext context) : IFolderAccessS
             .ToList();
 
         var userLookup = userIds.Count == 0
-            ? new Dictionary<Guid, string>()
+            ? []
             : await context.Users
                 .AsNoTracking()
                 .Where(user => userIds.Contains(user.Id))

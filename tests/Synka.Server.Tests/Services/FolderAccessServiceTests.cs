@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
 using Synka.Server.Services;
