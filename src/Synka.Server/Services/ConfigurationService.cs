@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Synka.Server.Services;
 
