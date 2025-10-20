@@ -119,13 +119,16 @@ public class SynkaDbContext(
     {
         var now = _timeProvider.GetUtcNow();
 
-        foreach (var entry in ChangeTracker.Entries<FolderEntity>())
+        foreach (var entry in ChangeTracker.Entries<IHasCreatedAt>())
         {
             if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
             {
                 entry.Entity.CreatedAt = now;
             }
+        }
 
+        foreach (var entry in ChangeTracker.Entries<IHasUpdatedAt>())
+        {
             if (entry.State == EntityState.Modified)
             {
                 entry.Entity.UpdatedAt = now;
@@ -153,12 +156,5 @@ public class SynkaDbContext(
             }
         }
 
-        foreach (var entry in ChangeTracker.Entries<ApplicationUserEntity>())
-        {
-            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
-            {
-                entry.Entity.CreatedAt = now;
-            }
-        }
     }
 }

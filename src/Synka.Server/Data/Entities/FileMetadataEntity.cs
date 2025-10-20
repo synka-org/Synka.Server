@@ -3,7 +3,7 @@ namespace Synka.Server.Data.Entities;
 /// <summary>
 /// Represents file metadata within a folder.
 /// </summary>
-public class FileMetadataEntity
+public class FileMetadataEntity : IHasUpdatedAt
 {
     /// <summary>
     /// Primary key.
