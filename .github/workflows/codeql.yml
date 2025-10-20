@@ -17,6 +17,9 @@ jobs:
       packages: read
       actions: read
       contents: read
+    env:
+      CODEQL_EXTRACTOR_CSHARP_ALLOW_UNSUPPORTED_COMPILER: true
+      SEMMLE_ALLOW_UNSUPPORTED_COMPILERS: true
 
     steps:
     - name: Checkout repository
