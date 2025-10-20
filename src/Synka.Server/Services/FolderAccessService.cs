@@ -202,7 +202,7 @@ public sealed class FolderAccessService(SynkaDbContext context, TimeProvider tim
                 userLookup.TryGetValue(row.UserId, out var userName) ? userName : string.Empty,
                 row.GrantedById,
                 userLookup.TryGetValue(row.GrantedById, out var grantorName) ? grantorName : string.Empty,
-                (FolderAccessPermissionLevel)row.Permission,
+                row.Permission.ToContractPermission(),
                 row.GrantedAt,
                 row.ExpiresAt))
             .OrderBy(access => access.UserName, StringComparer.OrdinalIgnoreCase)
