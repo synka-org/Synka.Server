@@ -1,7 +1,5 @@
 # TODO
 
-- Add configuration for the file system scan debounce time.
-- Update the file system watcher to monitor only the configured root paths.
 - Evaluate splitting responsibilities between data services and file system services.
 - Replace `DateTimeOffset.UtcNow` usages with the mockable `TimeProvider` in .NET 10 and update the engineering guide accordingly.
 - Introduce a helper to convert `row.Permission` to `FolderAccessPermissionLevel` instead of casting directly.
