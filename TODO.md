@@ -1,6 +1,5 @@
 # TODO
 
-- Align `FolderService` with `FileService` by resolving the user identifier from `HttpContext`; extract the lookup logic into shared code.
 - Enforce hard deletes for API-initiated folder deletions (including matching disk removal) while keeping watcher-triggered deletions soft with automatic restoration when content reappears.
 - Convert `FolderService.ProjectToResponse` into an extension on `IQueryable<FolderEntity>` so callers can invoke `ProjectToResponse()` directly.
 - Restrict `CreateFolderAsync` to non-root folders by limiting parameters to name, parent folder ID, and cancellation token.
