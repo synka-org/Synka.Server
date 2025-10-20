@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Synka.Server.Data;
+using Synka.Server.Options;
 using Synka.Server.Services.Logging;
 
 namespace Synka.Server.Services;
@@ -11,11 +13,14 @@ namespace Synka.Server.Services;
 /// </summary>
 /// <param name="scopeFactory">Scope factory used to resolve scoped dependencies.</param>
 /// <param name="logger">Logger instance.</param>
+/// <param name="watcherOptions">Configuration options for folder watcher behavior.</param>
 public sealed class FileSystemWatcherHostedService(
     IServiceScopeFactory scopeFactory,
-    ILogger<FileSystemWatcherHostedService> logger) : IHostedService, IFileSystemWatcherManager
+    ILogger<FileSystemWatcherHostedService> logger,
+    IOptions<FileSystemWatcherOptions> watcherOptions) : IHostedService, IFileSystemWatcherManager
 {
     private readonly ConcurrentDictionary<Guid, FolderWatcherInstance> _watchers = new();
+    private readonly TimeSpan _scanDebounceDelay = watcherOptions.Value.ScanDebounceDelay;
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -24,13 +29,13 @@ public sealed class FileSystemWatcherHostedService(
         using var scope = scopeFactory.CreateScope();
         await using var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
 
-        // Get all non-deleted folders
-        var folders = await dbContext.Folders
+        // Get configured root folders (shared or user-specific) that are not deleted
+        var rootFolders = await dbContext.Folders
             .AsNoTracking()
-            .Where(f => !f.IsDeleted)
+            .Where(f => !f.IsDeleted && f.ParentFolderId == null)
             .ToListAsync(cancellationToken);
 
-        foreach (var folder in folders)
+        foreach (var folder in rootFolders)
         {
             if (!Directory.Exists(folder.PhysicalPath))
             {
@@ -50,7 +55,12 @@ public sealed class FileSystemWatcherHostedService(
                     EnableRaisingEvents = true
                 };
 
-                var instance = new FolderWatcherInstance(folder.Id, folder.PhysicalPath, watcher, folder.OwnerId);
+                var instance = new FolderWatcherInstance(
+                    folder.Id,
+                    folder.PhysicalPath,
+                    watcher,
+                    folder.OwnerId,
+                    _scanDebounceDelay);
 
                 // Subscribe to events with debouncing
                 watcher.Changed += (sender, e) => OnFileSystemChanged(instance, e);
@@ -96,8 +106,14 @@ public sealed class FileSystemWatcherHostedService(
     /// <param name="folderId">The ID of the folder to watch.</param>
     /// <param name="physicalPath">The physical path of the folder.</param>
     /// <param name="ownerId">The owner ID of the folder.</param>
-    public void StartWatchingFolder(Guid folderId, string physicalPath, Guid? ownerId)
+    /// <param name="isRootFolder">True when the folder represents a configured root path.</param>
+    public void StartWatchingFolder(Guid folderId, string physicalPath, Guid? ownerId, bool isRootFolder)
     {
+        if (!isRootFolder)
+        {
+            return;
+        }
+
         if (_watchers.ContainsKey(folderId))
         {
             return; // Already watching
@@ -121,7 +137,7 @@ public sealed class FileSystemWatcherHostedService(
                 EnableRaisingEvents = true
             };
 
-            var instance = new FolderWatcherInstance(folderId, physicalPath, watcher, ownerId);
+            var instance = new FolderWatcherInstance(folderId, physicalPath, watcher, ownerId, _scanDebounceDelay);
 
             // Subscribe to events with debouncing
             watcher.Changed += (sender, e) => OnFileSystemChanged(instance, e);
@@ -234,6 +250,7 @@ public sealed class FileSystemWatcherHostedService(
     {
         private readonly FileSystemWatcher _watcher;
         private readonly Timer _debounceTimer;
+        private readonly TimeSpan _debounceDelay;
         private Action? _pendingAction;
         private readonly Lock _lock = new();
 
@@ -241,15 +258,21 @@ public sealed class FileSystemWatcherHostedService(
         public string PhysicalPath { get; }
         public Guid? OwnerId { get; }
 
-        public FolderWatcherInstance(Guid folderId, string physicalPath, FileSystemWatcher watcher, Guid? ownerId)
+        public FolderWatcherInstance(
+            Guid folderId,
+            string physicalPath,
+            FileSystemWatcher watcher,
+            Guid? ownerId,
+            TimeSpan debounceDelay)
         {
             FolderId = folderId;
             PhysicalPath = physicalPath;
             OwnerId = ownerId;
             _watcher = watcher;
+            _debounceDelay = debounceDelay;
 
-            // Debounce timer: wait 2 seconds of inactivity before triggering scan
-            _debounceTimer = new Timer(OnDebounceTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
+            // Debounce timer configured to wait for a period of inactivity before triggering scan
+            _debounceTimer = new Timer(OnDebounceTimerElapsed, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         }
 
         public void ScheduleScan(Action action)
@@ -258,8 +281,8 @@ public sealed class FileSystemWatcherHostedService(
             {
                 _pendingAction = action;
 
-                // Reset the timer - scan will trigger after 2 seconds of no changes
-                _debounceTimer.Change(2000, Timeout.Infinite);
+                // Reset the timer - scan will trigger after the configured debounce interval
+                _debounceTimer.Change(_debounceDelay, Timeout.InfiniteTimeSpan);
             }
         }
 

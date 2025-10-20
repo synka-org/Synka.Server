@@ -11,7 +11,8 @@ public interface IFileSystemWatcherManager
     /// <param name="folderId">The ID of the folder to watch.</param>
     /// <param name="physicalPath">The physical path of the folder.</param>
     /// <param name="ownerId">The owner ID of the folder.</param>
-    void StartWatchingFolder(Guid folderId, string physicalPath, Guid? ownerId);
+    /// <param name="isRootFolder">True when the folder represents a configured root path.</param>
+    void StartWatchingFolder(Guid folderId, string physicalPath, Guid? ownerId, bool isRootFolder);
 
     /// <summary>
     /// Stops watching a folder.

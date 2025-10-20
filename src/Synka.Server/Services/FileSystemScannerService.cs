@@ -354,7 +354,11 @@ public sealed class FileSystemScannerService(
         FileSystemScannerLoggers.LogFolderAdded(logger, newFolder.Id, folderName, null);
 
         // Start watching the newly created folder
-        watcherManager.StartWatchingFolder(newFolder.Id, newFolder.PhysicalPath, newFolder.OwnerId);
+        watcherManager.StartWatchingFolder(
+            newFolder.Id,
+            newFolder.PhysicalPath,
+            newFolder.OwnerId,
+            isRootFolder: false);
 
         return newFolder;
     }

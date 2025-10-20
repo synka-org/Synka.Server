@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Synka.Server.Authorization;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Options;
 using Synka.Server.Services;
 
 namespace Synka.Server.Extensions;
@@ -128,6 +129,12 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddScoped<IFolderService, FolderService>();
         builder.Services.AddScoped<IFolderAccessService, FolderAccessService>();
         builder.Services.AddScoped<IFileSystemScannerService, FileSystemScannerService>();
+
+        builder.Services
+            .AddOptions<FileSystemWatcherOptions>()
+            .Bind(builder.Configuration.GetSection("FileSystemWatcher"))
+            .Validate(options => options.ScanDebounceDelay > TimeSpan.Zero, "ScanDebounceDelay must be greater than zero.")
+            .ValidateOnStart();
 
         // Background service for automatic folder watching
         // Register as both IHostedService and IFileSystemWatcherManager (singleton)
