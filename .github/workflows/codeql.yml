@@ -38,11 +38,8 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-    - name: Restore dependencies
-      run: dotnet restore Synka.slnx
-
-    - name: Build
-      run: dotnet build Synka.slnx --no-restore --configuration Release
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
