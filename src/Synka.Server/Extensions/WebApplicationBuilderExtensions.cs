@@ -31,8 +31,8 @@ internal static class WebApplicationBuilderExtensions
 
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy(AuthorizationPolicies.AdministratorOnly, policy =>
-                policy.RequireRole(RoleNames.Administrator));
+            options.AddPolicy(AuthorizationPolicies.AdminOnly, policy =>
+                policy.RequireRole(RoleNames.Admin));
 
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()

@@ -55,7 +55,7 @@ internal static class WebApplicationExtensions
 
             if (pattern.EndsWith("/register", StringComparison.OrdinalIgnoreCase))
             {
-                endpoint.Metadata.Add(new AuthorizeAttribute(AuthorizationPolicies.AdministratorOnly));
+                endpoint.Metadata.Add(new AuthorizeAttribute(AuthorizationPolicies.AdminOnly));
                 return;
             }
 
@@ -248,6 +248,6 @@ internal static class WebApplicationExtensions
             }
         })
         .WithName("ScanSharedFolders")
-        .RequireAuthorization(AuthorizationPolicies.AdministratorOnly);
+    .RequireAuthorization(AuthorizationPolicies.AdminOnly);
     }
 }

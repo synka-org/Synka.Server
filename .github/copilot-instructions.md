@@ -40,7 +40,7 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
   ```
 
 ### Authorization
-- Admin-only endpoints use `AuthorizationPolicies.AdministratorOnly`
+- Admin-only endpoints use `AuthorizationPolicies.AdminOnly`
 - Registration endpoint (`/auth/register`) is admin-only
 - Fallback policy requires authenticated users unless explicitly marked `AllowAnonymous`
 

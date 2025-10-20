@@ -27,7 +27,7 @@ internal sealed class AuthenticationEndpointTests
     }
 
     [Test]
-    public async Task Register_RequiresAdministratorRole()
+    public async Task Register_RequiresAdminRole()
     {
         // Arrange
         await using var factory = new AuthenticatedSchemeWebApplicationFactory();
@@ -44,13 +44,13 @@ internal sealed class AuthenticationEndpointTests
     }
 
     [Test]
-    public async Task Register_AllowsAdministratorToCreateUsers()
+    public async Task Register_AllowsAdminToCreateUsers()
     {
         // Arrange
         await using var factory = new AuthenticatedSchemeWebApplicationFactory(options =>
         {
             options.UserName = "AdminUser";
-            options.Claims.AddAdministratorRole();
+            options.Claims.AddAdminRole();
         });
         using var client = factory.CreateClient();
 
