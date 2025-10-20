@@ -144,11 +144,26 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             .Select(ProjectToResponse())
             .ToListAsync(cancellationToken);
 
-        // Combine and return all accessible folders
-        return ownedFolders
-            .Concat(sharedRoots)
-            .Concat(sharedFolders)
-            .Distinct()
+        // Combine and return all accessible folders, ensuring uniqueness by folder ID
+        var uniqueFolders = new List<FolderResponse>(ownedFolders.Count + sharedRoots.Count + sharedFolders.Count);
+        var seenFolderIds = new HashSet<Guid>();
+
+        static void AddUniqueFolders(IEnumerable<FolderResponse> source, HashSet<Guid> seen, List<FolderResponse> target)
+        {
+            foreach (var folder in source)
+            {
+                if (seen.Add(folder.Id))
+                {
+                    target.Add(folder);
+                }
+            }
+        }
+
+        AddUniqueFolders(ownedFolders, seenFolderIds, uniqueFolders);
+        AddUniqueFolders(sharedRoots, seenFolderIds, uniqueFolders);
+        AddUniqueFolders(sharedFolders, seenFolderIds, uniqueFolders);
+
+        return uniqueFolders
             .OrderBy(f => f.Name)
             .ToList();
     }

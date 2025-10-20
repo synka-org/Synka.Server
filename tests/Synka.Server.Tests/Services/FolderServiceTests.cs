@@ -402,4 +402,31 @@ internal sealed class FolderServiceTests : IDisposable
         // Assert
         await Assert.That(accessible).IsEmpty();
     }
+
+    [Test]
+    public async Task GetAccessibleFoldersAsync_DoesNotReturnDuplicates()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var sharedRoot = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+
+        var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
+        var grant = new FolderAccessEntity
+        {
+            FolderId = sharedRoot.Id,
+            UserId = userId,
+            GrantedById = Guid.NewGuid(),
+            Permission = FolderAccessLevel.Read,
+            GrantedAt = timeProvider.GetUtcNow()
+        };
+        _context.FolderAccess.Add(grant);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var accessible = await _folderService.GetAccessibleFoldersAsync(userId);
+
+        // Assert
+        await Assert.That(accessible).HasCount().EqualTo(1);
+        await Assert.That(accessible[0].Id).IsEqualTo(sharedRoot.Id);
+    }
 }
