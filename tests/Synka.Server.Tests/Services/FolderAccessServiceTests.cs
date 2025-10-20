@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
 using Synka.Server.Services;
@@ -400,6 +401,10 @@ internal sealed class FolderAccessServiceTests : IDisposable
         await Assert.That(accessList).HasCount().EqualTo(2);
         await Assert.That(accessList.Any(a => a.UserId == user1)).IsTrue();
         await Assert.That(accessList.Any(a => a.UserId == user2)).IsTrue();
+        var readGrant = accessList.Single(a => a.UserId == user1);
+        await Assert.That(readGrant.Permission).IsEqualTo(FolderAccessPermissionLevel.Read);
+        var writeGrant = accessList.Single(a => a.UserId == user2);
+        await Assert.That(writeGrant.Permission).IsEqualTo(FolderAccessPermissionLevel.Write);
     }
 
     [Test]
