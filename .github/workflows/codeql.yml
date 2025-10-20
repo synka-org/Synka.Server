@@ -32,8 +32,10 @@ jobs:
       with:
         languages: csharp
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Build Solution
+      run: |
+        dotnet restore Synka.slnx
+        dotnet build Synka.slnx --no-restore --configuration Release
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
