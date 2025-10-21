@@ -24,7 +24,7 @@ internal sealed class FolderEndpointTests
         using var scope = factory.Services.CreateScope();
         var folderService = scope.ServiceProvider.GetRequiredService<IFolderService>();
         var userId = Guid.NewGuid();
-        var parent = await folderService.CreateFolderAsync(userId, "Parent", null, "/test/parent");
+        var parent = await folderService.CreateFolderInternalAsync(userId, "Parent", null, "/test/parent");
 
         // Create a child folder via API
         var childRequest = new CreateFolderRequest("Child", parent.Id, null);
@@ -54,7 +54,7 @@ internal sealed class FolderEndpointTests
         using var scope = factory.Services.CreateScope();
         var folderService = scope.ServiceProvider.GetRequiredService<IFolderService>();
         var userId = Guid.NewGuid();
-        var folder = await folderService.CreateFolderAsync(userId, "RootFolder", null, "/test/root");
+        var folder = await folderService.CreateFolderInternalAsync(userId, "RootFolder", null, "/test/root");
 
         // Act - Try to delete the root folder via API
         var deleteResponse = await client.DeleteAsync($"/api/v1/folders/{folder.Id}");
@@ -107,7 +107,7 @@ internal sealed class FolderEndpointTests
         using var scope = factory.Services.CreateScope();
         var folderService = scope.ServiceProvider.GetRequiredService<IFolderService>();
         var userId = Guid.NewGuid();
-        var parent = await folderService.CreateFolderAsync(userId, "Parent", null, "/test/parent");
+        var parent = await folderService.CreateFolderInternalAsync(userId, "Parent", null, "/test/parent");
 
         var request = new CreateFolderRequest("TestFolder", parent.Id, null);
 
@@ -150,8 +150,8 @@ internal sealed class FolderEndpointTests
         using var scope = factory.Services.CreateScope();
         var folderService = scope.ServiceProvider.GetRequiredService<IFolderService>();
         var userId = Guid.NewGuid();
-        await folderService.CreateFolderAsync(userId, "UserRoot", null, "/test/userroot");
-        await folderService.CreateFolderAsync(null, "SharedRoot", null, "/test/sharedroot");
+        await folderService.CreateFolderInternalAsync(userId, "UserRoot", null, "/test/userroot");
+        await folderService.CreateFolderInternalAsync(null, "SharedRoot", null, "/test/sharedroot");
 
         // Act
         var response = await client.GetAsync("/api/v1/folders/roots");

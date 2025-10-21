@@ -8,7 +8,7 @@ namespace Synka.Server.Services;
 
 public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider, ICurrentUserAccessor currentUserAccessor) : IFolderService
 {
-    public async Task<FolderEntity> CreateFolderAsync(
+    public async Task<FolderEntity> CreateFolderInternalAsync(
         Guid? ownerId,
         string name,
         Guid? parentFolderId,
@@ -60,7 +60,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return folder;
     }
 
-    public async Task<FolderResponse> CreateSubfolderAsync(
+    public async Task<FolderResponse> CreateFolderAsync(
         Guid parentFolderId,
         string name,
         CancellationToken cancellationToken = default)
@@ -78,7 +78,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
 
         var userId = currentUserAccessor.GetCurrentUserId();
 
-        var folder = await CreateFolderAsync(
+        var folder = await CreateFolderInternalAsync(
             userId,
             name,
             parentFolderId,

@@ -296,7 +296,6 @@ internal static class WebApplicationExtensions
         })
         .WithName("GetSubfolders");
 
-        // Create a new folder (non-root folders only)
         // Create a new subfolder
         foldersGroup.MapPost("/", async (
             CreateFolderRequest request,
@@ -310,7 +309,7 @@ internal static class WebApplicationExtensions
                     return Results.BadRequest(new { error = "ParentFolderId is required. Root folders cannot be created via API." });
                 }
 
-                var response = await folderService.CreateSubfolderAsync(
+                var response = await folderService.CreateFolderAsync(
                     request.ParentFolderId.Value,
                     request.Name,
                     cancellationToken);
