@@ -1,8 +1,12 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Synka.Server.Data;
+using Synka.Server.Data.Entities;
 using Synka.Server.Options;
 using Synka.Server.Services.Logging;
 
@@ -21,10 +25,19 @@ public sealed class FileSystemWatcherHostedService(
 {
     private readonly ConcurrentDictionary<Guid, FolderWatcherInstance> _watchers = new();
     private readonly TimeSpan _scanDebounceDelay = watcherOptions.Value.ScanDebounceDelay;
+    private readonly string? _userRootBasePath = NormalizeOptionalPath(watcherOptions.Value.UserRootBasePath, logger);
+    private readonly HashSet<string> _sharedRootPaths = BuildSharedRootPathSet(watcherOptions.Value.SharedRootPaths, logger);
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         FileSystemWatcherHostedServiceLoggers.LogWatchingStarted(logger, null);
+
+        if (_sharedRootPaths.Count == 0 && _userRootBasePath is null)
+        {
+            FileSystemWatcherHostedServiceLoggers.LogNoConfiguredRootPaths(logger, null);
+            FileSystemWatcherHostedServiceLoggers.LogWatchingFolderCount(logger, 0, null);
+            return;
+        }
 
         using var scope = scopeFactory.CreateScope();
         await using var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
@@ -35,7 +48,71 @@ public sealed class FileSystemWatcherHostedService(
             .Where(f => !f.IsDeleted && f.ParentFolderId == null)
             .ToListAsync(cancellationToken);
 
+        var matchingFolders = new List<(FolderEntity Folder, string NormalizedPath)>();
+
         foreach (var folder in rootFolders)
+        {
+            try
+            {
+                var normalizedPath = NormalizePath(folder.PhysicalPath);
+
+                if (folder.OwnerId is null)
+                {
+                    if (_sharedRootPaths.Contains(normalizedPath))
+                    {
+                        matchingFolders.Add((folder, normalizedPath));
+                    }
+                    else
+                    {
+                        FileSystemWatcherHostedServiceLoggers.LogRootFolderNotConfigured(logger, folder.Id, folder.PhysicalPath, null);
+                    }
+                }
+                else
+                {
+                    if (_userRootBasePath is null)
+                    {
+                        FileSystemWatcherHostedServiceLoggers.LogUserRootBasePathMissing(logger, folder.OwnerId.Value, folder.Id, folder.PhysicalPath, null);
+                        continue;
+                    }
+
+                    var expectedPath = BuildExpectedUserRootPath(folder.OwnerId.Value);
+
+                    if (expectedPath is null)
+                    {
+                        FileSystemWatcherHostedServiceLoggers.LogUserRootPathMismatch(logger, folder.OwnerId.Value, string.Empty, normalizedPath, null);
+                        continue;
+                    }
+
+                    if (!string.Equals(normalizedPath, expectedPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        FileSystemWatcherHostedServiceLoggers.LogUserRootPathMismatch(logger, folder.OwnerId.Value, expectedPath, normalizedPath, null);
+                        continue;
+                    }
+
+                    EnsureUserRootDirectoryExists(folder.OwnerId.Value, folder.PhysicalPath);
+                    matchingFolders.Add((folder, normalizedPath));
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or UnauthorizedAccessException or IOException or System.Security.SecurityException)
+            {
+                FileSystemWatcherHostedServiceLoggers.LogFolderPathNormalizationFailed(logger, folder.Id, folder.PhysicalPath, ex);
+            }
+        }
+
+        var matchedSharedPathSet = matchingFolders
+            .Where(entry => entry.Folder.OwnerId is null)
+            .Select(entry => entry.NormalizedPath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var configuredPath in _sharedRootPaths)
+        {
+            if (!matchedSharedPathSet.Contains(configuredPath))
+            {
+                FileSystemWatcherHostedServiceLoggers.LogConfiguredRootPathNotMapped(logger, configuredPath, null);
+            }
+        }
+
+        foreach (var (folder, _) in matchingFolders)
         {
             if (!Directory.Exists(folder.PhysicalPath))
             {
@@ -100,6 +177,100 @@ public sealed class FileSystemWatcherHostedService(
         return Task.CompletedTask;
     }
 
+    private static HashSet<string> BuildSharedRootPathSet(
+        IEnumerable<string>? sharedPaths,
+        ILogger<FileSystemWatcherHostedService> logger)
+    {
+        var normalizedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var configuredPath in sharedPaths ?? Array.Empty<string>())
+        {
+            var candidate = string.IsNullOrWhiteSpace(configuredPath)
+                ? "<empty>"
+                : configuredPath;
+
+            if (string.IsNullOrWhiteSpace(configuredPath))
+            {
+                FileSystemWatcherHostedServiceLoggers.LogConfiguredRootPathInvalid(logger, candidate, null);
+                continue;
+            }
+
+            try
+            {
+                var normalized = NormalizePath(configuredPath);
+                normalizedPaths.Add(normalized);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or UnauthorizedAccessException or IOException or System.Security.SecurityException)
+            {
+                FileSystemWatcherHostedServiceLoggers.LogConfiguredRootPathInvalid(logger, candidate, ex);
+            }
+        }
+
+        return normalizedPaths;
+    }
+
+    private static string? NormalizeOptionalPath(
+        string? path,
+        ILogger<FileSystemWatcherHostedService> logger)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return NormalizePath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            FileSystemWatcherHostedServiceLoggers.LogUserRootBasePathInvalid(logger, path, ex);
+            return null;
+        }
+    }
+
+    private static string NormalizePath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return Path.TrimEndingDirectorySeparator(fullPath);
+    }
+
+    private string? BuildExpectedUserRootPath(Guid userId)
+    {
+        if (_userRootBasePath is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return NormalizePath(Path.Combine(_userRootBasePath, userId.ToString("D")));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            FileSystemWatcherHostedServiceLoggers.LogUserRootPathBuildFailed(logger, userId, _userRootBasePath, ex);
+            return null;
+        }
+    }
+
+    private void EnsureUserRootDirectoryExists(Guid userId, string physicalPath)
+    {
+        if (Directory.Exists(physicalPath))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(physicalPath);
+            FileSystemWatcherHostedServiceLoggers.LogUserRootDirectoryCreated(logger, userId, physicalPath, null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            FileSystemWatcherHostedServiceLoggers.LogUserRootDirectoryCreationFailed(logger, userId, physicalPath, ex);
+        }
+    }
+
     /// <summary>
     /// Starts watching a newly created folder.
     /// </summary>
@@ -112,6 +283,51 @@ public sealed class FileSystemWatcherHostedService(
         if (!isRootFolder)
         {
             return;
+        }
+
+        string normalizedPath;
+
+        try
+        {
+            normalizedPath = NormalizePath(physicalPath);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            FileSystemWatcherHostedServiceLoggers.LogFolderPathNormalizationFailed(logger, folderId, physicalPath, ex);
+            return;
+        }
+
+        if (ownerId is null)
+        {
+            if (_sharedRootPaths.Count == 0)
+            {
+                FileSystemWatcherHostedServiceLoggers.LogRootFolderNotConfigured(logger, folderId, physicalPath, null);
+                return;
+            }
+
+            if (!_sharedRootPaths.Contains(normalizedPath))
+            {
+                FileSystemWatcherHostedServiceLoggers.LogRootFolderNotConfigured(logger, folderId, physicalPath, null);
+                return;
+            }
+        }
+        else
+        {
+            if (_userRootBasePath is null)
+            {
+                FileSystemWatcherHostedServiceLoggers.LogUserRootBasePathMissing(logger, ownerId.Value, folderId, physicalPath, null);
+                return;
+            }
+
+            var expectedPath = BuildExpectedUserRootPath(ownerId.Value);
+
+            if (expectedPath is null || !string.Equals(normalizedPath, expectedPath, StringComparison.OrdinalIgnoreCase))
+            {
+                FileSystemWatcherHostedServiceLoggers.LogUserRootPathMismatch(logger, ownerId.Value, expectedPath ?? string.Empty, normalizedPath, null);
+                return;
+            }
+
+            EnsureUserRootDirectoryExists(ownerId.Value, physicalPath);
         }
 
         if (_watchers.ContainsKey(folderId))

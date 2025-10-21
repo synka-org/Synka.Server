@@ -1,3 +1,5 @@
+using System.IO;
+using System.Linq;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -136,6 +138,8 @@ internal static class WebApplicationBuilderExtensions
             .AddOptions<FileSystemWatcherOptions>()
             .Bind(builder.Configuration.GetSection("FileSystemWatcher"))
             .Validate(options => options.ScanDebounceDelay > TimeSpan.Zero, "ScanDebounceDelay must be greater than zero.")
+            .Validate(options => string.IsNullOrWhiteSpace(options.UserRootBasePath) || Path.IsPathRooted(options.UserRootBasePath), "UserRootBasePath must be an absolute path when specified.")
+            .Validate(options => options.SharedRootPaths.All(path => !string.IsNullOrWhiteSpace(path)), "SharedRootPaths cannot contain empty values.")
             .ValidateOnStart();
 
         // Background service for automatic folder watching

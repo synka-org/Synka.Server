@@ -1,8 +1,11 @@
+using System.Collections.ObjectModel;
+
 namespace Synka.Server.Options;
 
 public sealed class FileSystemWatcherOptions
 {
     private TimeSpan _scanDebounceDelay = TimeSpan.FromSeconds(2);
+    private string? _userRootBasePath;
 
     public TimeSpan ScanDebounceDelay
     {
@@ -17,4 +20,12 @@ public sealed class FileSystemWatcherOptions
             _scanDebounceDelay = value;
         }
     }
+
+    public string? UserRootBasePath
+    {
+        get => _userRootBasePath;
+        set => _userRootBasePath = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    public Collection<string> SharedRootPaths { get; } = new();
 }
