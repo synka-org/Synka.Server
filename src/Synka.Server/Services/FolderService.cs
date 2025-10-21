@@ -6,7 +6,7 @@ using Synka.Server.Extensions;
 
 namespace Synka.Server.Services;
 
-public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider, ICurrentUserAccessor currentUserAccessor) : IFolderService
+public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider, ICurrentUserAccessor currentUserAccessor, IFileSystemService fileSystem) : IFolderService
 {
     public async Task<FolderEntity> CreateFolderInternalAsync(
         Guid? ownerId,
@@ -35,15 +35,18 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             throw new ArgumentException("Physical path is required for root folders.", nameof(physicalPath));
         }
 
-        // For subfolders, construct path relative to parent
-        if (parentFolderId.HasValue && string.IsNullOrWhiteSpace(physicalPath))
+        // Construct the physical path
+        if (parentFolderId.HasValue)
         {
+            // For subfolders, construct path relative to parent using sanitized name
+            var sanitizedName = SanitizeFileSystemName(name);
             var parent = await context.Folders
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.Id == parentFolderId.Value, cancellationToken);
 
-            physicalPath = Path.Combine(parent!.PhysicalPath, name);
+            physicalPath = Path.Combine(parent!.PhysicalPath, sanitizedName);
         }
+        // else: For root folders, use physicalPath as-is
 
         var folder = new FolderEntity
         {
@@ -53,6 +56,23 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             PhysicalPath = physicalPath!,
             CreatedAt = timeProvider.GetUtcNow()
         };
+
+        // Create physical directory on disk
+        try
+        {
+            if (!fileSystem.DirectoryExists(physicalPath))
+            {
+                fileSystem.CreateDirectory(physicalPath!);
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Silently skip directory creation for paths without write permission
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidOperationException($"Failed to create directory '{physicalPath}': {ex.Message}", ex);
+        }
 
         context.Folders.Add(folder);
         await context.SaveChangesAsync(cancellationToken);
@@ -264,11 +284,11 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         }
 
         // Remove from disk
-        if (Directory.Exists(folder.PhysicalPath))
+        if (fileSystem.DirectoryExists(folder.PhysicalPath))
         {
             try
             {
-                Directory.Delete(folder.PhysicalPath, recursive: true);
+                fileSystem.DeleteDirectory(folder.PhysicalPath, recursive: true);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
             {
@@ -340,5 +360,27 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         {
             await RestoreRecursiveAsync(subfolder, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Sanitizes a folder name for filesystem use by removing or replacing invalid characters.
+    /// </summary>
+    /// <param name="name">The folder name to sanitize.</param>
+    /// <returns>A sanitized folder name safe for filesystem use.</returns>
+    private static string SanitizeFileSystemName(string name)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var sanitized = string.Concat(name.Select(c => invalidChars.Contains(c) ? '_' : c));
+
+        // Trim whitespace and dots from ends (invalid on Windows)
+        sanitized = sanitized.Trim().TrimEnd('.');
+
+        // Ensure name is not empty after sanitization
+        if (string.IsNullOrWhiteSpace(sanitized))
+        {
+            sanitized = "folder";
+        }
+
+        return sanitized;
     }
 }
