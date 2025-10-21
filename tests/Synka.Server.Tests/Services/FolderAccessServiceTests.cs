@@ -44,7 +44,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(userId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(userId, "Test", null, "/test");
 
         // Act
         var hasAccess = await _accessService.HasAccessAsync(userId, folder.Id, FolderAccessLevel.Read);
@@ -58,7 +58,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+        var folder = await _folderService.CreateFolderInternalAsync(null, "Shared", null, "/shared");
 
         // Act
         var hasAccess = await _accessService.HasAccessAsync(userId, folder.Id, FolderAccessLevel.Read);
@@ -73,7 +73,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Read);
 
@@ -90,8 +90,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var parentFolder = await _folderService.CreateFolderAsync(ownerId, "Parent", null, "/parent");
-        var childFolder = await _folderService.CreateFolderAsync(ownerId, "Child", parentFolder.Id, null);
+        var parentFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Parent", null, "/parent");
+        var childFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Child", parentFolder.Id, null);
 
         await _accessService.GrantAccessAsync(userId, parentFolder.Id, ownerId, FolderAccessLevel.Admin);
 
@@ -108,7 +108,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         var access = new FolderAccessEntity
         {
@@ -134,7 +134,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Read);
 
@@ -150,7 +150,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(userId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(userId, "Test", null, "/test");
 
         // Act
         var permission = await _accessService.GetEffectivePermissionAsync(userId, folder.Id);
@@ -164,7 +164,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+        var folder = await _folderService.CreateFolderInternalAsync(null, "Shared", null, "/shared");
 
         // Act
         var permission = await _accessService.GetEffectivePermissionAsync(userId, folder.Id);
@@ -179,7 +179,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Write);
 
@@ -196,8 +196,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var parentFolder = await _folderService.CreateFolderAsync(ownerId, "Parent", null, "/parent");
-        var childFolder = await _folderService.CreateFolderAsync(ownerId, "Child", parentFolder.Id, null);
+        var parentFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Parent", null, "/parent");
+        var childFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Child", parentFolder.Id, null);
 
         await _accessService.GrantAccessAsync(userId, parentFolder.Id, ownerId, FolderAccessLevel.Admin);
 
@@ -214,7 +214,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         // Act
         var permission = await _accessService.GetEffectivePermissionAsync(userId, folder.Id);
@@ -228,7 +228,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(userId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(userId, "Test", null, "/test");
 
         // Act
         var canShare = await _accessService.CanShareAsync(userId, folder.Id);
@@ -243,7 +243,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Write);
 
@@ -260,7 +260,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         // Act
         await _accessService.GrantAccessAsync(
@@ -305,7 +305,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var granterId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         // Give granter only Write permission
         await _accessService.GrantAccessAsync(granterId, folder.Id, ownerId, FolderAccessLevel.Write);
@@ -326,7 +326,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Read);
 
@@ -346,7 +346,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Read);
         var newExpiration = DateTime.UtcNow.AddDays(60);
@@ -370,7 +370,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Read);
 
@@ -388,7 +388,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var ownerId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         var user1 = Guid.NewGuid();
         var user2 = Guid.NewGuid();
@@ -414,7 +414,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var ownerId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         var user1 = Guid.NewGuid();
         var user2 = Guid.NewGuid();
@@ -445,9 +445,9 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder1 = await _folderService.CreateFolderAsync(userId, "Test1", null, "/test1");
-        var folder2 = await _folderService.CreateFolderAsync(userId, "Test2", null, "/test2");
-        await _folderService.CreateFolderAsync(Guid.NewGuid(), "Other", null, "/other");
+        var folder1 = await _folderService.CreateFolderInternalAsync(userId, "Test1", null, "/test1");
+        var folder2 = await _folderService.CreateFolderInternalAsync(userId, "Test2", null, "/test2");
+        await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Other", null, "/other");
 
         // Act
         var accessible = await _accessService.GetAccessibleFolderIdsAsync(userId, FolderAccessLevel.Read);
@@ -463,7 +463,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var sharedRoot = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+        var sharedRoot = await _folderService.CreateFolderInternalAsync(null, "Shared", null, "/shared");
 
         // Act
         var accessible = await _accessService.GetAccessibleFolderIdsAsync(userId, FolderAccessLevel.Read);
@@ -478,7 +478,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         await _accessService.GrantAccessAsync(userId, folder.Id, ownerId, FolderAccessLevel.Write);
 
@@ -495,8 +495,8 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var readFolder = await _folderService.CreateFolderAsync(ownerId, "Read", null, "/read");
-        var writeFolder = await _folderService.CreateFolderAsync(ownerId, "Write", null, "/write");
+        var readFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Read", null, "/read");
+        var writeFolder = await _folderService.CreateFolderInternalAsync(ownerId, "Write", null, "/write");
 
         await _accessService.GrantAccessAsync(userId, readFolder.Id, ownerId, FolderAccessLevel.Read);
         await _accessService.GrantAccessAsync(userId, writeFolder.Id, ownerId, FolderAccessLevel.Write);
@@ -515,7 +515,7 @@ internal sealed class FolderAccessServiceTests : IDisposable
         // Arrange
         var ownerId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(ownerId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(ownerId, "Test", null, "/test");
 
         var expiredAccess = new FolderAccessEntity
         {

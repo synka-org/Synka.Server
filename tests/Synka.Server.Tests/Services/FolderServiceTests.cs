@@ -45,7 +45,7 @@ internal sealed class FolderServiceTests : IDisposable
         const string physicalPath = "/test/folder";
 
         // Act
-        var folder = await _folderService.CreateFolderAsync(
+        var folder = await _folderService.CreateFolderInternalAsync(
             ownerId,
             folderName,
             null,
@@ -70,7 +70,7 @@ internal sealed class FolderServiceTests : IDisposable
         const string physicalPath = "/shared/folder";
 
         // Act
-        var folder = await _folderService.CreateFolderAsync(
+        var folder = await _folderService.CreateFolderInternalAsync(
             null,
             folderName,
             null,
@@ -88,14 +88,14 @@ internal sealed class FolderServiceTests : IDisposable
     {
         // Arrange
         var ownerId = Guid.NewGuid();
-        var parentFolder = await _folderService.CreateFolderAsync(
+        var parentFolder = await _folderService.CreateFolderInternalAsync(
             ownerId,
             "Parent",
             null,
             "/parent");
 
         // Act
-        var subfolder = await _folderService.CreateFolderAsync(
+        var subfolder = await _folderService.CreateFolderInternalAsync(
             ownerId,
             "Child",
             parentFolder.Id,
@@ -116,7 +116,7 @@ internal sealed class FolderServiceTests : IDisposable
         var invalidParentId = Guid.NewGuid();
 
         // Act & Assert
-        await Assert.That(async () => await _folderService.CreateFolderAsync(
+        await Assert.That(async () => await _folderService.CreateFolderInternalAsync(
             Guid.NewGuid(),
             "Child",
             invalidParentId,
@@ -129,7 +129,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task CreateFolderAsync_RootWithoutPhysicalPath_ThrowsArgumentException()
     {
         // Act & Assert
-        await Assert.That(async () => await _folderService.CreateFolderAsync(
+        await Assert.That(async () => await _folderService.CreateFolderInternalAsync(
             Guid.NewGuid(),
             "Root",
             null,
@@ -142,7 +142,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task GetFolderAsync_WithExistingFolder_ReturnsFolder()
     {
         // Arrange
-        var folder = await _folderService.CreateFolderAsync(
+        var folder = await _folderService.CreateFolderInternalAsync(
             Guid.NewGuid(),
             "Test",
             null,
@@ -176,11 +176,11 @@ internal sealed class FolderServiceTests : IDisposable
         var userId = Guid.NewGuid();
         var otherUserId = Guid.NewGuid();
 
-        var userRoot1 = await _folderService.CreateFolderAsync(userId, "Root1", null, "/root1");
-        var userRoot2 = await _folderService.CreateFolderAsync(userId, "Root2", null, "/root2");
-        await _folderService.CreateFolderAsync(otherUserId, "OtherRoot", null, "/other");
-        await _folderService.CreateFolderAsync(null, "SharedRoot", null, "/shared");
-        await _folderService.CreateFolderAsync(userId, "Subfolder", userRoot1.Id, null);
+        var userRoot1 = await _folderService.CreateFolderInternalAsync(userId, "Root1", null, "/root1");
+        var userRoot2 = await _folderService.CreateFolderInternalAsync(userId, "Root2", null, "/root2");
+        await _folderService.CreateFolderInternalAsync(otherUserId, "OtherRoot", null, "/other");
+        await _folderService.CreateFolderInternalAsync(null, "SharedRoot", null, "/shared");
+        await _folderService.CreateFolderInternalAsync(userId, "Subfolder", userRoot1.Id, null);
 
         // Act
         _currentUserAccessor.CurrentUserId = userId;
@@ -195,9 +195,9 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task GetSharedRootFoldersAsync_ReturnsOnlySharedRoots()
     {
         // Arrange
-        var sharedRoot1 = await _folderService.CreateFolderAsync(null, "Shared1", null, "/shared1");
-        var sharedRoot2 = await _folderService.CreateFolderAsync(null, "Shared2", null, "/shared2");
-        await _folderService.CreateFolderAsync(Guid.NewGuid(), "UserRoot", null, "/user");
+        var sharedRoot1 = await _folderService.CreateFolderInternalAsync(null, "Shared1", null, "/shared1");
+        var sharedRoot2 = await _folderService.CreateFolderInternalAsync(null, "Shared2", null, "/shared2");
+        await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "UserRoot", null, "/user");
 
         // Act
         var roots = await _folderService.GetSharedRootFoldersAsync();
@@ -211,10 +211,10 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task GetSubfoldersAsync_ReturnsOnlyDirectChildren()
     {
         // Arrange
-        var parent = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Parent", null, "/parent");
-        var child1 = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Child1", parent.Id, null);
-        var child2 = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Child2", parent.Id, null);
-        await _folderService.CreateFolderAsync(Guid.NewGuid(), "Grandchild", child1.Id, null);
+        var parent = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Parent", null, "/parent");
+        var child1 = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Child1", parent.Id, null);
+        var child2 = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Child2", parent.Id, null);
+        await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Grandchild", child1.Id, null);
 
         // Act
         var subfolders = await _folderService.GetSubfoldersAsync(parent.Id);
@@ -228,7 +228,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task DeleteFolderAsync_SoftDelete_MarksFolderAsDeleted()
     {
         // Arrange
-        var folder = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Test", null, "/test");
 
         // Act
         await _folderService.SoftDeleteFolderAsync(folder.Id);
@@ -243,8 +243,8 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task DeleteFolderAsync_SoftDelete_RecursivelyMarksChildren()
     {
         // Arrange
-        var parent = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Parent", null, "/parent");
-        var child = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Child", parent.Id, null);
+        var parent = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Parent", null, "/parent");
+        var child = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Child", parent.Id, null);
 
         // Add a file to the child folder
         var file = new FileMetadataEntity
@@ -277,8 +277,8 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task DeleteFolderAsync_HardDelete_RemovesFolder()
     {
         // Arrange - Create a non-root folder for hard delete testing
-        var parent = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Parent", null, "/parent");
-        var child = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Child", parent.Id, null);
+        var parent = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Parent", null, "/parent");
+        var child = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Child", parent.Id, null);
 
         // Act
         await _folderService.HardDeleteFolderAsync(child.Id);
@@ -292,7 +292,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task RestoreFolderAsync_RestoresSoftDeletedFolder()
     {
         // Arrange
-        var folder = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Test", null, "/test");
         await _folderService.SoftDeleteFolderAsync(folder.Id);
 
         // Act
@@ -308,8 +308,8 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task RestoreFolderAsync_RecursivelyRestoresChildren()
     {
         // Arrange
-        var parent = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Parent", null, "/parent");
-        var child = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Child", parent.Id, null);
+        var parent = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Parent", null, "/parent");
+        var child = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Child", parent.Id, null);
         await _folderService.SoftDeleteFolderAsync(parent.Id);
 
         // Act
@@ -328,7 +328,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task ExistsAsync_WithExistingFolder_ReturnsTrue()
     {
         // Arrange
-        var folder = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Test", null, "/test");
 
         // Act
         var exists = await _folderService.ExistsAsync(folder.Id);
@@ -341,7 +341,7 @@ internal sealed class FolderServiceTests : IDisposable
     public async Task ExistsAsync_WithDeletedFolder_ReturnsFalse()
     {
         // Arrange
-        var folder = await _folderService.CreateFolderAsync(Guid.NewGuid(), "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "Test", null, "/test");
         await _folderService.SoftDeleteFolderAsync(folder.Id);
 
         // Act
@@ -366,8 +366,8 @@ internal sealed class FolderServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var owned = await _folderService.CreateFolderAsync(userId, "Owned", null, "/owned");
-        await _folderService.CreateFolderAsync(Guid.NewGuid(), "NotOwned", null, "/notowned");
+        var owned = await _folderService.CreateFolderInternalAsync(userId, "Owned", null, "/owned");
+        await _folderService.CreateFolderInternalAsync(Guid.NewGuid(), "NotOwned", null, "/notowned");
 
         // Act
         _currentUserAccessor.CurrentUserId = userId;
@@ -383,7 +383,7 @@ internal sealed class FolderServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var sharedRoot = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+        var sharedRoot = await _folderService.CreateFolderInternalAsync(null, "Shared", null, "/shared");
 
         // Act
         _currentUserAccessor.CurrentUserId = userId;
@@ -399,7 +399,7 @@ internal sealed class FolderServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var folder = await _folderService.CreateFolderAsync(userId, "Test", null, "/test");
+        var folder = await _folderService.CreateFolderInternalAsync(userId, "Test", null, "/test");
         await _folderService.SoftDeleteFolderAsync(folder.Id);
 
         // Act
@@ -415,7 +415,7 @@ internal sealed class FolderServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var sharedRoot = await _folderService.CreateFolderAsync(null, "Shared", null, "/shared");
+        var sharedRoot = await _folderService.CreateFolderInternalAsync(null, "Shared", null, "/shared");
 
         var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var grant = new FolderAccessEntity
