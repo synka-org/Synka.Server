@@ -28,6 +28,7 @@ app.MapAuthenticationEndpoints();
 app.MapServiceManifestEndpoint();
 app.MapConfigurationEndpoint();
 app.MapFileEndpoints();
+app.MapFolderEndpoints();
 
 // Fallback to index.html for Angular routing
 app.MapFallbackToFile("index.html");

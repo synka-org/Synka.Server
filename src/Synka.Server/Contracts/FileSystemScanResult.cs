@@ -9,6 +9,7 @@ namespace Synka.Server.Contracts;
 /// <param name="FilesDeleted">Number of files marked as deleted in database.</param>
 /// <param name="FoldersAdded">Number of new folders discovered and added to database.</param>
 /// <param name="FoldersDeleted">Number of folders marked as deleted in database.</param>
+/// <param name="FoldersRestored">Number of folders restored from soft-deleted state.</param>
 /// <param name="Errors">List of errors encountered during the scan.</param>
 public record FileSystemScanResult(
     int FoldersScanned,
@@ -17,4 +18,5 @@ public record FileSystemScanResult(
     int FilesDeleted,
     int FoldersAdded,
     int FoldersDeleted,
+    int FoldersRestored,
     IReadOnlyList<string> Errors);

@@ -250,4 +250,99 @@ internal static class WebApplicationExtensions
         .WithName("ScanSharedFolders")
     .RequireAuthorization(AuthorizationPolicies.AdminOnly);
     }
+
+    public static void MapFolderEndpoints(this WebApplication app)
+    {
+        var foldersGroup = app.MapGroup("/api/v{version:apiVersion}/folders")
+            .WithTags("Folders")
+            .RequireAuthorization();
+
+        // Get folder by ID
+        foldersGroup.MapGet("/{folderId:guid}", async (
+            Guid folderId,
+            IFolderService folderService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var folder = await folderService.GetFolderAsync(folderId, cancellationToken);
+                return Results.Ok(folder);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound();
+            }
+        })
+        .WithName("GetFolder");
+
+        // Get root folders (both user and shared)
+        foldersGroup.MapGet("/roots", async (
+            IFolderService folderService,
+            CancellationToken cancellationToken) =>
+        {
+            var folders = await folderService.GetRootFoldersAsync(cancellationToken);
+            return Results.Ok(folders);
+        })
+        .WithName("GetRootFolders");
+
+        // Get subfolders
+        foldersGroup.MapGet("/{parentFolderId:guid}/subfolders", async (
+            Guid parentFolderId,
+            IFolderService folderService,
+            CancellationToken cancellationToken) =>
+        {
+            var subfolders = await folderService.GetSubfoldersAsync(parentFolderId, cancellationToken);
+            return Results.Ok(subfolders);
+        })
+        .WithName("GetSubfolders");
+
+        // Create a new folder (non-root folders only)
+        // Create a new subfolder
+        foldersGroup.MapPost("/", async (
+            CreateFolderRequest request,
+            IFolderService folderService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                if (!request.ParentFolderId.HasValue)
+                {
+                    return Results.BadRequest(new { error = "ParentFolderId is required. Root folders cannot be created via API." });
+                }
+
+                var response = await folderService.CreateSubfolderAsync(
+                    request.ParentFolderId.Value,
+                    request.Name,
+                    cancellationToken);
+
+                return Results.Created($"/api/v1/folders/{response.Id}", response);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("CreateFolder");
+        // Delete a folder (hard delete with disk removal)
+        foldersGroup.MapDelete("/{folderId:guid}", async (
+            Guid folderId,
+            IFolderService folderService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                await folderService.HardDeleteFolderAsync(folderId, cancellationToken);
+                return Results.NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Forbid();
+            }
+        })
+        .WithName("DeleteFolder");
+    }
 }

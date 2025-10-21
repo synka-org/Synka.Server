@@ -58,6 +58,16 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
+        EventId = 13,
+        Level = LogLevel.Information,
+        Message = "Folder restored from deleted state: {FolderId} - {FolderName}")]
+    public static partial void LogFolderRestored(
+        ILogger logger,
+        Guid folderId,
+        string folderName,
+        Exception? exception);
+
+    [LoggerMessage(
         EventId = 6,
         Level = LogLevel.Warning,
         Message = "Folder not found on disk: {FolderId} - {PhysicalPath}")]
@@ -116,7 +126,7 @@ internal static partial class FileSystemScannerLoggers
     [LoggerMessage(
         EventId = 12,
         Level = LogLevel.Information,
-        Message = "Scan completed: {FoldersScanned} folders scanned, {FilesAdded} files added, {FilesUpdated} updated, {FilesDeleted} deleted, {FoldersAdded} folders added, {FoldersDeleted} folders deleted, {ErrorCount} errors")]
+        Message = "Scan completed: {FoldersScanned} folders scanned, {FilesAdded} files added, {FilesUpdated} updated, {FilesDeleted} deleted, {FoldersAdded} folders added, {FoldersDeleted} folders deleted, {FoldersRestored} folders restored, {ErrorCount} errors")]
     public static partial void LogScanCompleted(
         ILogger logger,
         int foldersScanned,
@@ -125,6 +135,7 @@ internal static partial class FileSystemScannerLoggers
         int filesDeleted,
         int foldersAdded,
         int foldersDeleted,
+        int foldersRestored,
         int errorCount,
         Exception? exception);
 }

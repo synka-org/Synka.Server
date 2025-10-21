@@ -12,8 +12,16 @@ public interface IFolderService
         string? physicalPath,
         CancellationToken cancellationToken = default);
 
+    Task<FolderResponse> CreateSubfolderAsync(
+        Guid parentFolderId,
+        string name,
+        CancellationToken cancellationToken = default);
+
     Task<FolderResponse> GetFolderAsync(
         Guid folderId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<FolderResponse>> GetRootFoldersAsync(
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FolderResponse>> GetUserRootFoldersAsync(
@@ -30,9 +38,12 @@ public interface IFolderService
         Guid? parentFolderId = null,
         CancellationToken cancellationToken = default);
 
-    Task DeleteFolderAsync(
+    Task SoftDeleteFolderAsync(
         Guid folderId,
-        bool softDelete = true,
+        CancellationToken cancellationToken = default);
+
+    Task HardDeleteFolderAsync(
+        Guid folderId,
         CancellationToken cancellationToken = default);
 
     Task RestoreFolderAsync(
