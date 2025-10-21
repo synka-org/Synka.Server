@@ -23,7 +23,7 @@ RUN apk add --no-cache wget && \
 # ============================================================================
 # Stage 2: Build the .NET backend
 # ============================================================================
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.100-rc.2 AS backend-build
 
 WORKDIR /src
 
