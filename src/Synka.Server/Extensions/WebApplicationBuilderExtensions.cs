@@ -130,6 +130,7 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddScoped<ICurrentUserAccessor, HttpContextCurrentUserAccessor>();
         builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
         builder.Services.AddScoped<IFileService, FileService>();
+        builder.Services.AddScoped<IFileSystemService, FileSystemService>();
         builder.Services.AddScoped<IFolderService, FolderService>();
         builder.Services.AddScoped<IFolderAccessService, FolderAccessService>();
         builder.Services.AddScoped<IFileSystemScannerService, FileSystemScannerService>();

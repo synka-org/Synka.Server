@@ -12,12 +12,14 @@ namespace Synka.Server.Services;
 /// <param name="dbContext">Database context.</param>
 /// <param name="configuration">Application configuration.</param>
 /// <param name="currentUserAccessor">Accessor for retrieving current user information.</param>
+/// <param name="fileSystem">Filesystem abstraction for file operations.</param>
 /// <param name="logger">Logger instance.</param>
 /// <param name="timeProvider">Time abstraction for timestamp generation.</param>
 public sealed class FileService(
     SynkaDbContext dbContext,
     IConfiguration configuration,
     ICurrentUserAccessor currentUserAccessor,
+    IFileSystemService fileSystem,
     ILogger<FileService> logger,
     TimeProvider timeProvider) : IFileService
 {
@@ -55,7 +57,7 @@ public sealed class FileService(
         }
 
         // Ensure upload directory exists
-        Directory.CreateDirectory(_uploadDirectory);
+        fileSystem.CreateDirectory(_uploadDirectory);
 
         // Generate unique file ID and storage path
         var fileId = Guid.NewGuid();
@@ -69,7 +71,7 @@ public sealed class FileService(
         {
             // Save file to disk and compute hash
             using var hashAlgorithm = SHA256.Create();
-            await using (var fileStream = new FileStream(storagePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            await using (var fileStream = fileSystem.OpenFile(storagePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 await using var sourceStream = file.OpenReadStream();
 
@@ -121,11 +123,11 @@ public sealed class FileService(
         catch
         {
             // Clean up file on failure
-            if (File.Exists(storagePath))
+            if (fileSystem.FileExists(storagePath))
             {
                 try
                 {
-                    File.Delete(storagePath);
+                    fileSystem.DeleteFile(storagePath);
                 }
                 catch (Exception ex)
                 {
@@ -218,11 +220,11 @@ public sealed class FileService(
         }
 
         // Delete file from disk
-        if (File.Exists(metadata.StoragePath))
+        if (fileSystem.FileExists(metadata.StoragePath))
         {
             try
             {
-                File.Delete(metadata.StoragePath);
+                fileSystem.DeleteFile(metadata.StoragePath);
                 FileServiceLoggers.LogFileDeleted(logger, metadata.StoragePath, fileId, null);
             }
 #pragma warning disable CA1031 // Catch specific exception - logging deletion failure
