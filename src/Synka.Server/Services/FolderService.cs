@@ -1,8 +1,8 @@
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Extensions;
 
 namespace Synka.Server.Services;
 
@@ -66,7 +66,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
     {
         var folder = await context.Folders
             .Where(f => f.Id == folderId && !f.IsDeleted)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .FirstOrDefaultAsync(cancellationToken);
 
         return folder ?? throw new InvalidOperationException($"Folder '{folderId}' not found.");
@@ -80,7 +80,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return await context.Folders
             .Where(f => f.OwnerId == userId && f.ParentFolderId == null && !f.IsDeleted)
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
     }
 
@@ -90,7 +90,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return await context.Folders
             .Where(f => f.OwnerId == null && f.ParentFolderId == null && !f.IsDeleted)
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
     }
 
@@ -101,7 +101,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return await context.Folders
             .Where(f => f.ParentFolderId == parentFolderId && !f.IsDeleted)
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
     }
 
@@ -115,14 +115,14 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         var ownedFolders = await context.Folders
             .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId && f.OwnerId == userId)
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
 
         // Get shared root folders (accessible to all)
         var sharedRoots = await context.Folders
             .Where(f => !f.IsDeleted && f.ParentFolderId == parentFolderId && f.OwnerId == null)
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
 
         // Get folders explicitly shared with user
@@ -143,7 +143,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
                        f.ParentFolderId == parentFolderId &&
                        activeSharedFolderIds.Contains(f.Id))
             .OrderBy(f => f.Name)
-            .Select(ProjectToResponse())
+            .ProjectToResponse()
             .ToListAsync(cancellationToken);
 
         // Combine and return all accessible folders, ensuring uniqueness by folder ID
@@ -259,18 +259,4 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             await RestoreRecursiveAsync(subfolder, cancellationToken);
         }
     }
-
-    private static Expression<Func<FolderEntity, FolderResponse>> ProjectToResponse() => folder => new FolderResponse(
-        folder.Id,
-        folder.OwnerId,
-        folder.ParentFolderId,
-        folder.Name,
-        folder.PhysicalPath,
-        folder.IsSharedRoot,
-        folder.ParentFolderId == null && folder.OwnerId != null,
-        folder.IsDeleted,
-        folder.Files.Count(file => !file.IsDeleted),
-        folder.ChildFolders.Count(subFolder => !subFolder.IsDeleted),
-        folder.CreatedAt,
-        folder.UpdatedAt);
 }
