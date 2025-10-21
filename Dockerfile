@@ -48,7 +48,7 @@ RUN dotnet publish src/Synka.Server/Synka.Server.csproj \
 # ============================================================================
 # Stage 3: Final runtime image
 # ============================================================================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.100-rc.2 AS final
 
 WORKDIR /app
 
