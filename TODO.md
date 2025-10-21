@@ -1,6 +1,6 @@
 # TODO
 
-- Enforce hard deletes for API-initiated folder deletions (including matching disk removal) while keeping watcher-triggered deletions soft with automatic restoration when content reappears.
+- Enforce hard deletes for API-initiated folder deletions (including matching disk removal) while keeping watcher-triggered deletions soft with automatic restoration when content reappears. Root folders cannot be deleted.
 - Restrict `CreateFolderAsync` to non-root folders by limiting parameters to name, parent folder ID, and cancellation token.
 - Replace generic exceptions such as `ArgumentException` with domain-specific variants (e.g., `FolderNotFoundException`).
 - Validate configured root folders at startup or after configuration changes, creating any missing entries in the database.

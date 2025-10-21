@@ -276,21 +276,43 @@ public sealed class FileSystemScannerService(
             .Where(name => !string.IsNullOrEmpty(name))
             .ToHashSet();
 
-        var subfoldersInDb = folder.ChildFolders
+        var activeFoldersInDb = folder.ChildFolders
             .Where(f => !f.IsDeleted)
             .ToDictionary(f => f.Name, f => f);
 
-        // Find new subfolders
-        foreach (var subfolderName in subfoldersOnDisk.Except(subfoldersInDb.Keys))
+        var deletedFoldersInDb = folder.ChildFolders
+            .Where(f => f.IsDeleted)
+            .ToDictionary(f => f.Name, f => f);
+
+        // Find new subfolders and restore deleted ones
+        foreach (var subfolderName in subfoldersOnDisk.Except(activeFoldersInDb.Keys))
         {
             try
             {
                 var subfolderPath = Path.Combine(folder.PhysicalPath, subfolderName!);
-                var newFolder = await AddNewFolderAsync(folder, userId, subfolderPath, subfolderName!, cancellationToken);
-                result.IncrementFoldersAdded();
 
-                // Recursively scan new folder
-                await ScanFolderRecursiveAsync(newFolder, userId, result, cancellationToken);
+                // Check if this is a previously soft-deleted folder that should be restored
+                if (deletedFoldersInDb.TryGetValue(subfolderName!, out var deletedFolder))
+                {
+                    // Restore the soft-deleted folder
+                    deletedFolder.IsDeleted = false;
+                    deletedFolder.UpdatedAt = timeProvider.GetUtcNow();
+                    result.IncrementFoldersRestored();
+
+                    FileSystemScannerLoggers.LogFolderRestored(logger, deletedFolder.Id, deletedFolder.Name, null);
+
+                    // Continue with recursive scanning of the restored folder
+                    await ScanFolderRecursiveAsync(deletedFolder, userId, result, cancellationToken);
+                }
+                else
+                {
+                    // This is a truly new folder
+                    var newFolder = await AddNewFolderAsync(folder, userId, subfolderPath, subfolderName!, cancellationToken);
+                    result.IncrementFoldersAdded();
+
+                    // Recursively scan new folder
+                    await ScanFolderRecursiveAsync(newFolder, userId, result, cancellationToken);
+                }
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -304,10 +326,10 @@ public sealed class FileSystemScannerService(
             }
         }
 
-        // Find deleted subfolders
-        foreach (var subfolderName in subfoldersInDb.Keys.Except(subfoldersOnDisk))
+        // Find deleted subfolders (only mark active folders as deleted)
+        foreach (var subfolderName in activeFoldersInDb.Keys.Except(subfoldersOnDisk))
         {
-            var subfolder = subfoldersInDb[subfolderName!];
+            var subfolder = activeFoldersInDb[subfolderName!];
             subfolder.IsDeleted = true;
             subfolder.UpdatedAt = timeProvider.GetUtcNow();
             result.IncrementFoldersDeleted();
@@ -317,10 +339,10 @@ public sealed class FileSystemScannerService(
             watcherManager.StopWatchingFolder(subfolder.Id);
         }
 
-        // Recursively scan existing subfolders
-        foreach (var subfolderName in subfoldersOnDisk.Intersect(subfoldersInDb.Keys))
+        // Recursively scan existing active subfolders
+        foreach (var subfolderName in subfoldersOnDisk.Intersect(activeFoldersInDb.Keys))
         {
-            var subfolder = subfoldersInDb[subfolderName!];
+            var subfolder = activeFoldersInDb[subfolderName!];
             await ScanFolderRecursiveAsync(subfolder, userId, result, cancellationToken);
         }
     }
@@ -398,6 +420,7 @@ public sealed class FileSystemScannerService(
         private int _filesDeleted;
         private int _foldersAdded;
         private int _foldersDeleted;
+        private int _foldersRestored;
         private readonly List<string> _errors = [];
 
         public void IncrementFoldersScanned() => _foldersScanned++;
@@ -406,6 +429,7 @@ public sealed class FileSystemScannerService(
         public void IncrementFilesDeleted() => _filesDeleted++;
         public void IncrementFoldersAdded() => _foldersAdded++;
         public void IncrementFoldersDeleted() => _foldersDeleted++;
+        public void IncrementFoldersRestored() => _foldersRestored++;
         public void AddError(string error) => _errors.Add(error);
 
         public FileSystemScanResult Build() => new(
@@ -415,6 +439,7 @@ public sealed class FileSystemScannerService(
             _filesDeleted,
             _foldersAdded,
             _foldersDeleted,
+            _foldersRestored,
             _errors);
     }
 }

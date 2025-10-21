@@ -60,6 +60,47 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return folder;
     }
 
+    public async Task<FolderResponse> CreateSubfolderAsync(
+        Guid parentFolderId,
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        // Validate parent folder exists
+        var parentExists = await context.Folders
+            .AnyAsync(f => f.Id == parentFolderId && !f.IsDeleted, cancellationToken);
+
+        if (!parentExists)
+        {
+            throw new ArgumentException($"Parent folder '{parentFolderId}' does not exist.", nameof(parentFolderId));
+        }
+
+        var userId = currentUserAccessor.GetCurrentUserId();
+
+        var folder = await CreateFolderAsync(
+            userId,
+            name,
+            parentFolderId,
+            null, // Physical path will be constructed relative to parent
+            cancellationToken);
+
+        // Project to response
+        return new FolderResponse(
+            folder.Id,
+            folder.OwnerId,
+            folder.ParentFolderId,
+            folder.Name,
+            folder.PhysicalPath,
+            folder.IsSharedRoot,
+            folder.IsUserRoot,
+            folder.IsDeleted,
+            0, // FileCount
+            0, // SubfolderCount
+            folder.CreatedAt,
+            folder.UpdatedAt);
+    }
+
     public async Task<FolderResponse> GetFolderAsync(
         Guid folderId,
         CancellationToken cancellationToken = default)
@@ -70,6 +111,19 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             .FirstOrDefaultAsync(cancellationToken);
 
         return folder ?? throw new InvalidOperationException($"Folder '{folderId}' not found.");
+    }
+
+    public async Task<IReadOnlyList<FolderResponse>> GetRootFoldersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = currentUserAccessor.GetCurrentUserId();
+
+        return await context.Folders
+            .Where(f => f.ParentFolderId == null && !f.IsDeleted && (f.OwnerId == userId || f.OwnerId == null))
+            .OrderBy(f => f.OwnerId == null ? 0 : 1) // Shared roots first
+            .ThenBy(f => f.Name)
+            .ProjectToResponse()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<FolderResponse>> GetUserRootFoldersAsync(
@@ -170,9 +224,8 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             .ToList();
     }
 
-    public async Task DeleteFolderAsync(
+    public async Task SoftDeleteFolderAsync(
         Guid folderId,
-        bool softDelete = true,
         CancellationToken cancellationToken = default)
     {
         var folder = await context.Folders
@@ -185,17 +238,46 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             return;
         }
 
-        if (softDelete)
+        // Soft delete allows restoration when content reappears
+        await SoftDeleteRecursiveAsync(folder, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task HardDeleteFolderAsync(
+        Guid folderId,
+        CancellationToken cancellationToken = default)
+    {
+        var folder = await context.Folders
+            .Include(f => f.ChildFolders)
+            .Include(f => f.Files)
+            .FirstOrDefaultAsync(f => f.Id == folderId, cancellationToken);
+
+        if (folder is null)
         {
-            // Recursively soft-delete subfolders and files
-            await SoftDeleteRecursiveAsync(folder, cancellationToken);
-        }
-        else
-        {
-            // Hard delete - cascade handled by EF configuration
-            context.Folders.Remove(folder);
+            return;
         }
 
+        // Prevent deletion of root folders via API
+        if (folder.ParentFolderId is null)
+        {
+            throw new InvalidOperationException("Root folders cannot be deleted.");
+        }
+
+        // Remove from disk
+        if (Directory.Exists(folder.PhysicalPath))
+        {
+            try
+            {
+                Directory.Delete(folder.PhysicalPath, recursive: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+            {
+                throw new InvalidOperationException($"Failed to delete folder from disk: {ex.Message}", ex);
+            }
+        }
+
+        // Hard delete from database - cascade handled by EF configuration
+        context.Folders.Remove(folder);
         await context.SaveChangesAsync(cancellationToken);
     }
 
