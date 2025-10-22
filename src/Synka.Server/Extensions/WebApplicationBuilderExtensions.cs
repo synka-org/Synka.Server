@@ -134,6 +134,7 @@ internal static class WebApplicationBuilderExtensions
         builder.Services.AddScoped<IFolderService, FolderService>();
         builder.Services.AddScoped<IFolderAccessService, FolderAccessService>();
         builder.Services.AddScoped<IFileSystemScannerService, FileSystemScannerService>();
+        builder.Services.AddScoped<IRootFolderSynchronizationService, RootFolderSynchronizationService>();
 
         builder.Services
             .AddOptions<FileSystemWatcherOptions>()
