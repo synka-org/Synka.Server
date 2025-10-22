@@ -12,31 +12,27 @@ internal sealed class FolderAccessServiceTests : IDisposable
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly IServiceScope _scope;
+#pragma warning disable CA2213 // Disposable fields should be disposed - disposed by scope
     private readonly SynkaDbContext _context;
+#pragma warning restore CA2213
     private readonly TestCurrentUserAccessor _currentUserAccessor;
-    private readonly MockFileSystemService _fileSystem;
-    private readonly FolderService _folderService;
-    private readonly FolderAccessService _accessService;
+    private readonly IFileSystemService _fileSystem;
+    private readonly IFolderService _folderService;
+    private readonly IFolderAccessService _accessService;
 
     public FolderAccessServiceTests()
     {
         _factory = new TestWebApplicationFactory();
         _scope = _factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
-        var timeProvider = _scope.ServiceProvider.GetRequiredService<TimeProvider>();
-        _currentUserAccessor = new TestCurrentUserAccessor();
-        _fileSystem = new MockFileSystemService();
-        _folderService = new FolderService(_context, timeProvider, _currentUserAccessor, _fileSystem);
-        _accessService = new FolderAccessService(_context, timeProvider);
-
-        // Disable foreign key constraints for testing
-        // (Database is already created by TestWebApplicationFactory)
-        _context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = OFF;");
+        _currentUserAccessor = (TestCurrentUserAccessor)_scope.ServiceProvider.GetRequiredService<ICurrentUserAccessor>();
+        _fileSystem = _scope.ServiceProvider.GetRequiredService<IFileSystemService>();
+        _folderService = _scope.ServiceProvider.GetRequiredService<IFolderService>();
+        _accessService = _scope.ServiceProvider.GetRequiredService<IFolderAccessService>();
     }
 
     public void Dispose()
     {
-        _context.Dispose();
         _scope.Dispose();
         _factory.Dispose();
     }
