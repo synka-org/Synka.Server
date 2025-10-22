@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Synka.Server.Data;
+using Synka.Server.Services;
 
 namespace Synka.Server.Tests.Infrastructure;
 
@@ -33,6 +34,10 @@ internal class TestWebApplicationFactory : WebApplicationFactory<Program>
                 _connection.Open();
 
                 services.AddDbContext<SynkaDbContext>(options => options.UseSqlite(_connection));
+
+                // Replace the file system service with a mock
+                services.RemoveAll<IFileSystemService>();
+                services.AddSingleton<IFileSystemService, MockFileSystemService>();
 
                 // Ensure the database schema is created for the in-memory database
                 var serviceProvider = services.BuildServiceProvider();
