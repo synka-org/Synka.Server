@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Exceptions;
 using Synka.Server.Extensions;
 
 namespace Synka.Server.Services;
@@ -25,14 +26,14 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
 
             if (!parentExists)
             {
-                throw new ArgumentException($"Parent folder '{parentFolderId}' does not exist.", nameof(parentFolderId));
+                throw new FolderNotFoundException(parentFolderId.Value, "Parent");
             }
         }
 
         // For root folders, require physical path
         if (!parentFolderId.HasValue && string.IsNullOrWhiteSpace(physicalPath))
         {
-            throw new ArgumentException("Physical path is required for root folders.", nameof(physicalPath));
+            throw new RootFolderPhysicalPathRequiredException();
         }
 
         // Construct the physical path
@@ -93,7 +94,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
 
         if (!parentExists)
         {
-            throw new ArgumentException($"Parent folder '{parentFolderId}' does not exist.", nameof(parentFolderId));
+            throw new FolderNotFoundException(parentFolderId, "Parent");
         }
 
         var userId = currentUserAccessor.GetCurrentUserId();
@@ -130,7 +131,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             .ProjectToResponse()
             .FirstOrDefaultAsync(cancellationToken);
 
-        return folder ?? throw new InvalidOperationException($"Folder '{folderId}' not found.");
+        return folder ?? throw new FolderNotFoundException(folderId);
     }
 
     public async Task<IReadOnlyList<FolderResponse>> GetRootFoldersAsync(

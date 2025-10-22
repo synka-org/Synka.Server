@@ -5,6 +5,7 @@ using Synka.Server.Authorization;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Exceptions;
 using Synka.Server.Services;
 
 namespace Synka.Server.Extensions;
@@ -122,7 +123,7 @@ internal static class WebApplicationExtensions
                 var response = await fileService.UploadFileAsync(file, folderId, cancellationToken);
                 return Results.Ok(response);
             }
-            catch (ArgumentException ex)
+            catch (InvalidFileUploadException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
@@ -268,7 +269,7 @@ internal static class WebApplicationExtensions
                 var folder = await folderService.GetFolderAsync(folderId, cancellationToken);
                 return Results.Ok(folder);
             }
-            catch (InvalidOperationException)
+            catch (FolderNotFoundException)
             {
                 return Results.NotFound();
             }
@@ -316,7 +317,7 @@ internal static class WebApplicationExtensions
 
                 return Results.Created($"/api/v1/folders/{response.Id}", response);
             }
-            catch (ArgumentException ex)
+            catch (FolderNotFoundException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
             }

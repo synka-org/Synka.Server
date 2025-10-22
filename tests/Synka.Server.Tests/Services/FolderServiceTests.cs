@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Exceptions;
 using Synka.Server.Services;
 using Synka.Server.Tests.Infrastructure;
 
@@ -112,7 +113,7 @@ internal sealed class FolderServiceTests : IDisposable
     }
 
     [Test]
-    public async Task CreateFolderAsync_WithInvalidParent_ThrowsArgumentException()
+    public async Task CreateFolderAsync_WithInvalidParent_ThrowsFolderNotFoundException()
     {
         // Arrange
         var invalidParentId = Guid.NewGuid();
@@ -123,12 +124,12 @@ internal sealed class FolderServiceTests : IDisposable
             "Child",
             invalidParentId,
             null))
-            .Throws<ArgumentException>()
-            .And.HasMessageContaining("does not exist");
+            .Throws<FolderNotFoundException>()
+            .And.HasMessageContaining("Parent folder");
     }
 
     [Test]
-    public async Task CreateFolderAsync_RootWithoutPhysicalPath_ThrowsArgumentException()
+    public async Task CreateFolderAsync_RootWithoutPhysicalPath_ThrowsRootFolderPhysicalPathRequiredException()
     {
         // Act & Assert
         await Assert.That(async () => await _folderService.CreateFolderInternalAsync(
@@ -136,7 +137,7 @@ internal sealed class FolderServiceTests : IDisposable
             "Root",
             null,
             null))
-            .Throws<ArgumentException>()
+            .Throws<RootFolderPhysicalPathRequiredException>()
             .And.HasMessageContaining("Physical path is required");
     }
 
@@ -160,14 +161,14 @@ internal sealed class FolderServiceTests : IDisposable
     }
 
     [Test]
-    public async Task GetFolderAsync_WithNonExistingFolder_ThrowsInvalidOperationException()
+    public async Task GetFolderAsync_WithNonExistingFolder_ThrowsFolderNotFoundException()
     {
         // Arrange
         var nonExistingId = Guid.NewGuid();
 
         // Act & Assert
         await Assert.That(async () => await _folderService.GetFolderAsync(nonExistingId))
-            .Throws<InvalidOperationException>()
+            .Throws<FolderNotFoundException>()
             .And.HasMessageContaining("not found");
     }
 
