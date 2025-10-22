@@ -26,5 +26,11 @@ internal sealed class ManifestEndpointTests
         await Assert.That(payload).IsNotNull();
         await Assert.That(payload!.Service).IsEqualTo("Synka.Server");
         await Assert.That(payload.RequiresConfiguration).IsTrue();
+        await Assert.That(payload.ConfigurationTasks).IsNotNull();
+        await Assert.That(payload.ConfigurationTasks).HasCount(1);
+
+        var configurationTask = payload.ConfigurationTasks[0];
+        await Assert.That(configurationTask.Key).IsEqualTo("initial-admin-user");
+        await Assert.That(configurationTask.State).IsEqualTo(ConfigurationTaskState.Pending);
     }
 }
