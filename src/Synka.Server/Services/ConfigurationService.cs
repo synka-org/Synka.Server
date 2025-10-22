@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +17,7 @@ public sealed class ConfigurationService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var requiresConfiguration = await RequiresConfigurationAsync(cancellationToken);
+        var (requiresConfiguration, _) = await GetConfigurationStatusAsync(cancellationToken);
 
         if (!requiresConfiguration)
         {
@@ -51,18 +53,30 @@ public sealed class ConfigurationService(
 
     public async Task<IResult> GetServiceManifestAsync(CancellationToken cancellationToken = default)
     {
-        var requiresConfiguration = await RequiresConfigurationAsync(cancellationToken);
+        var (requiresConfiguration, configurationTasks) = await GetConfigurationStatusAsync(cancellationToken);
 
         return TypedResults.Ok(new ServiceManifestResponse(
             Service: "Synka.Server",
             Version: typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
-            RequiresConfiguration: requiresConfiguration));
+            RequiresConfiguration: requiresConfiguration,
+            ConfigurationTasks: configurationTasks));
     }
 
-    private async Task<bool> RequiresConfigurationAsync(CancellationToken cancellationToken = default)
+    private async Task<(bool RequiresConfiguration, IReadOnlyList<ConfigurationTaskStatus> ConfigurationTasks)> GetConfigurationStatusAsync(
+        CancellationToken cancellationToken = default)
     {
+        var configurationTasks = new List<ConfigurationTaskStatus>();
+
         var hasUsers = await userManager.Users.AnyAsync(cancellationToken);
 
-        return !hasUsers;
+        configurationTasks.Add(new ConfigurationTaskStatus(
+            Key: "initial-admin-user",
+            Title: "Create initial administrator",
+            Description: "Create the first administrator account to finish initial setup.",
+            State: hasUsers ? ConfigurationTaskState.Completed : ConfigurationTaskState.Pending));
+
+        var requiresConfiguration = configurationTasks.Any(task => task.State == ConfigurationTaskState.Pending);
+
+        return (requiresConfiguration, configurationTasks);
     }
 }

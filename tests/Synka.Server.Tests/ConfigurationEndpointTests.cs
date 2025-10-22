@@ -146,5 +146,10 @@ internal sealed class ConfigurationEndpointTests
         await Assert.That(manifest).IsNotNull();
         await Assert.That(manifest!.RequiresConfiguration)
             .IsFalse();
+        await Assert.That(manifest.ConfigurationTasks).IsNotNull();
+        await Assert.That(manifest.ConfigurationTasks)
+            .HasCount(1);
+        await Assert.That(manifest.ConfigurationTasks[0].State)
+            .IsEqualTo(ConfigurationTaskState.Completed);
     }
 }
