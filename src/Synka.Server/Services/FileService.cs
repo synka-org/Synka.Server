@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Exceptions;
 
 namespace Synka.Server.Services;
 
@@ -35,7 +36,7 @@ public sealed class FileService(
     /// <param name="file">File to upload.</param>
     /// <param name="folderId">Folder ID where the file should be stored.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <exception cref="ArgumentException">Thrown if file is empty or exceeds maximum allowed size.</exception>
+    /// <exception cref="InvalidFileUploadException">Thrown if file is empty or exceeds maximum allowed size.</exception>
     /// <exception cref="UnauthorizedAccessException">Thrown if user cannot be identified.</exception>
     public async Task<FileUploadResponse> UploadFileAsync(
         IFormFile file,
@@ -48,12 +49,12 @@ public sealed class FileService(
 
         if (file.Length == 0)
         {
-            throw new ArgumentException("File is empty", nameof(file));
+            throw new InvalidFileUploadException("File is empty.");
         }
 
         if (file.Length > MaxFileSizeBytes)
         {
-            throw new ArgumentException($"File size exceeds maximum allowed size of {MaxFileSizeBytes} bytes", nameof(file));
+            throw new InvalidFileUploadException($"File size exceeds maximum allowed size of {MaxFileSizeBytes} bytes.");
         }
 
         // Ensure upload directory exists

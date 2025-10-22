@@ -2,84 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Exceptions;
 using Synka.Server.Extensions;
 
 namespace Synka.Server.Services;
 
 public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvider, ICurrentUserAccessor currentUserAccessor, IFileSystemService fileSystem) : IFolderService
 {
-    public async Task<FolderEntity> CreateFolderInternalAsync(
-        Guid? ownerId,
-        string name,
-        Guid? parentFolderId,
-        string? physicalPath,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-
-        // Validate parent folder exists if specified
-        if (parentFolderId.HasValue)
-        {
-            var parentExists = await context.Folders
-                .AnyAsync(f => f.Id == parentFolderId.Value, cancellationToken);
-
-            if (!parentExists)
-            {
-                throw new ArgumentException($"Parent folder '{parentFolderId}' does not exist.", nameof(parentFolderId));
-            }
-        }
-
-        // For root folders, require physical path
-        if (!parentFolderId.HasValue && string.IsNullOrWhiteSpace(physicalPath))
-        {
-            throw new ArgumentException("Physical path is required for root folders.", nameof(physicalPath));
-        }
-
-        // Construct the physical path
-        if (parentFolderId.HasValue)
-        {
-            // For subfolders, construct path relative to parent using sanitized name
-            var sanitizedName = SanitizeFileSystemName(name);
-            var parent = await context.Folders
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == parentFolderId.Value, cancellationToken);
-
-            physicalPath = Path.Combine(parent!.PhysicalPath, sanitizedName);
-        }
-        // else: For root folders, use physicalPath as-is
-
-        var folder = new FolderEntity
-        {
-            OwnerId = ownerId,
-            ParentFolderId = parentFolderId,
-            Name = name,
-            PhysicalPath = physicalPath!,
-            CreatedAt = timeProvider.GetUtcNow()
-        };
-
-        // Create physical directory on disk
-        try
-        {
-            if (!fileSystem.DirectoryExists(physicalPath))
-            {
-                fileSystem.CreateDirectory(physicalPath!);
-            }
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // Silently skip directory creation for paths without write permission
-        }
-        catch (IOException ex)
-        {
-            throw new InvalidOperationException($"Failed to create directory '{physicalPath}': {ex.Message}", ex);
-        }
-
-        context.Folders.Add(folder);
-        await context.SaveChangesAsync(cancellationToken);
-
-        return folder;
-    }
-
     public async Task<FolderResponse> CreateFolderAsync(
         Guid parentFolderId,
         string name,
@@ -93,7 +22,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
 
         if (!parentExists)
         {
-            throw new ArgumentException($"Parent folder '{parentFolderId}' does not exist.", nameof(parentFolderId));
+            throw new FolderNotFoundException(parentFolderId, "Parent");
         }
 
         var userId = currentUserAccessor.GetCurrentUserId();
@@ -130,7 +59,7 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
             .ProjectToResponse()
             .FirstOrDefaultAsync(cancellationToken);
 
-        return folder ?? throw new InvalidOperationException($"Folder '{folderId}' not found.");
+        return folder ?? throw new FolderNotFoundException(folderId);
     }
 
     public async Task<IReadOnlyList<FolderResponse>> GetRootFoldersAsync(
@@ -327,6 +256,75 @@ public sealed class FolderService(SynkaDbContext context, TimeProvider timeProvi
         return await context.Folders
             .AnyAsync(f => f.Id == folderId && !f.IsDeleted, cancellationToken);
     }
+
+    public async Task<FolderEntity> CreateFolderInternalAsync(
+        Guid? ownerId,
+        string name,
+        Guid? parentFolderId,
+        string? physicalPath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        // Validate parent folder exists if specified
+        if (parentFolderId.HasValue)
+        {
+            var parentExists = await context.Folders
+                .AnyAsync(f => f.Id == parentFolderId.Value, cancellationToken);
+
+            if (!parentExists)
+            {
+                throw new FolderNotFoundException(parentFolderId.Value, "Parent");
+            }
+        }
+
+        // For root folders, require physical path
+        if (!parentFolderId.HasValue && string.IsNullOrWhiteSpace(physicalPath))
+        {
+            throw new RootFolderPhysicalPathRequiredException();
+        }
+
+        // Construct the physical path
+        if (parentFolderId.HasValue)
+        {
+            // For subfolders, construct path relative to parent using sanitized name
+            var sanitizedName = SanitizeFileSystemName(name);
+            var parent = await context.Folders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.Id == parentFolderId.Value, cancellationToken);
+
+            physicalPath = Path.Combine(parent!.PhysicalPath, sanitizedName);
+        }
+        // else: For root folders, use physicalPath as-is
+
+        var folder = new FolderEntity
+        {
+            OwnerId = ownerId,
+            ParentFolderId = parentFolderId,
+            Name = name,
+            PhysicalPath = physicalPath!,
+            CreatedAt = timeProvider.GetUtcNow()
+        };
+
+        // Create physical directory on disk
+        try
+        {
+            if (!fileSystem.DirectoryExists(physicalPath!))
+            {
+                fileSystem.CreateDirectory(physicalPath!);
+            }
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidOperationException($"Failed to create directory '{physicalPath}': {ex.Message}", ex);
+        }
+
+        context.Folders.Add(folder);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return folder;
+    }
+
 
     private static async Task SoftDeleteRecursiveAsync(FolderEntity folder, CancellationToken cancellationToken)
     {
