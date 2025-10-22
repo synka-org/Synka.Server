@@ -35,6 +35,10 @@ internal class TestWebApplicationFactory : WebApplicationFactory<Program>
 
                 services.AddDbContext<SynkaDbContext>(options => options.UseSqlite(_connection));
 
+                // Replace the current user accessor with a test implementation
+                services.RemoveAll<ICurrentUserAccessor>();
+                services.AddSingleton<ICurrentUserAccessor, TestCurrentUserAccessor>();
+
                 // Replace the file system service with a mock
                 services.RemoveAll<IFileSystemService>();
                 services.AddSingleton<IFileSystemService, MockFileSystemService>();
