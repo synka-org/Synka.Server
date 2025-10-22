@@ -6,7 +6,7 @@ namespace Synka.Server.Services.Logging;
 internal static partial class FileSystemScannerLoggers
 {
     [LoggerMessage(
-        EventId = 1,
+    EventId = 201,
         Level = LogLevel.Information,
         Message = "File added: {FileId} - {FileName} ({SizeBytes} bytes)")]
     public static partial void LogFileAdded(
@@ -17,7 +17,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 2,
+    EventId = 202,
         Level = LogLevel.Information,
         Message = "File updated: {FileId} - {FileName} ({SizeBytes} bytes)")]
     public static partial void LogFileUpdated(
@@ -28,7 +28,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 3,
+    EventId = 203,
         Level = LogLevel.Information,
         Message = "File marked as deleted: {FileId} - {FileName}")]
     public static partial void LogFileMarkedDeleted(
@@ -38,7 +38,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 4,
+    EventId = 204,
         Level = LogLevel.Information,
         Message = "Folder added: {FolderId} - {FolderName}")]
     public static partial void LogFolderAdded(
@@ -48,7 +48,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 5,
+    EventId = 205,
         Level = LogLevel.Information,
         Message = "Folder marked as deleted: {FolderId} - {FolderName}")]
     public static partial void LogFolderMarkedDeleted(
@@ -58,7 +58,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 13,
+    EventId = 206,
         Level = LogLevel.Information,
         Message = "Folder restored from deleted state: {FolderId} - {FolderName}")]
     public static partial void LogFolderRestored(
@@ -68,7 +68,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 6,
+    EventId = 207,
         Level = LogLevel.Warning,
         Message = "Folder not found on disk: {FolderId} - {PhysicalPath}")]
     public static partial void LogFolderNotFound(
@@ -78,7 +78,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 7,
+    EventId = 208,
         Level = LogLevel.Error,
         Message = "Error scanning folder: {FolderId} - {PhysicalPath}")]
     public static partial void LogScanError(
@@ -88,7 +88,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 8,
+    EventId = 209,
         Level = LogLevel.Error,
         Message = "Error adding file: {FileName}")]
     public static partial void LogFileAddError(
@@ -97,7 +97,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 9,
+    EventId = 210,
         Level = LogLevel.Error,
         Message = "Error checking file: {FileName}")]
     public static partial void LogFileCheckError(
@@ -106,7 +106,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 10,
+    EventId = 211,
         Level = LogLevel.Error,
         Message = "Error adding folder: {FolderName}")]
     public static partial void LogFolderAddError(
@@ -115,7 +115,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 11,
+    EventId = 212,
         Level = LogLevel.Information,
         Message = "Starting scan for folder: {FolderId}")]
     public static partial void LogScanStarted(
@@ -124,7 +124,7 @@ internal static partial class FileSystemScannerLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 12,
+    EventId = 213,
         Level = LogLevel.Information,
         Message = "Scan completed: {FoldersScanned} folders scanned, {FilesAdded} files added, {FilesUpdated} updated, {FilesDeleted} deleted, {FoldersAdded} folders added, {FoldersDeleted} folders deleted, {FoldersRestored} folders restored, {ErrorCount} errors")]
     public static partial void LogScanCompleted(

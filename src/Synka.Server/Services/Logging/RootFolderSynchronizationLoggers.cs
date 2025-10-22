@@ -8,7 +8,7 @@ namespace Synka.Server.Services.Logging;
 internal static partial class RootFolderSynchronizationLoggers
 {
     [LoggerMessage(
-        EventId = 1,
+    EventId = 401,
         Level = LogLevel.Information,
         Message = "Created shared root folder {FolderId} at {PhysicalPath}")]
     public static partial void LogSharedRootCreated(
@@ -18,7 +18,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 2,
+    EventId = 402,
         Level = LogLevel.Information,
         Message = "Restored shared root folder {FolderId} at {PhysicalPath}")]
     public static partial void LogSharedRootRestored(
@@ -28,7 +28,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 3,
+    EventId = 403,
         Level = LogLevel.Warning,
         Message = "Ignoring configured shared root path because it is invalid: {PhysicalPath}")]
     public static partial void LogSharedRootPathInvalid(
@@ -37,7 +37,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 4,
+    EventId = 404,
         Level = LogLevel.Warning,
         Message = "Failed to normalize existing shared root folder {FolderId} at {PhysicalPath}")]
     public static partial void LogExistingSharedRootNormalizationFailed(
@@ -47,7 +47,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception exception);
 
     [LoggerMessage(
-        EventId = 5,
+    EventId = 405,
         Level = LogLevel.Warning,
         Message = "Ignoring configured user root base path because it is invalid: {BasePath}")]
     public static partial void LogUserRootBasePathInvalid(
@@ -56,7 +56,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception exception);
 
     [LoggerMessage(
-        EventId = 6,
+    EventId = 406,
         Level = LogLevel.Information,
         Message = "Created user root folder {FolderId} for user {UserId} at {PhysicalPath}")]
     public static partial void LogUserRootCreated(
@@ -67,7 +67,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 7,
+    EventId = 407,
         Level = LogLevel.Information,
         Message = "Restored user root folder {FolderId} for user {UserId} at {PhysicalPath}")]
     public static partial void LogUserRootRestored(
@@ -78,7 +78,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 8,
+    EventId = 408,
         Level = LogLevel.Information,
         Message = "Updated user root folder {FolderId} for user {UserId} from {PreviousPath} to {PhysicalPath}")]
     public static partial void LogUserRootPathUpdated(
@@ -90,7 +90,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception? exception);
 
     [LoggerMessage(
-        EventId = 9,
+    EventId = 409,
         Level = LogLevel.Warning,
         Message = "Failed to normalize existing user root folder {FolderId} for user {UserId} at {PhysicalPath}")]
     public static partial void LogExistingUserRootNormalizationFailed(
@@ -101,7 +101,7 @@ internal static partial class RootFolderSynchronizationLoggers
         Exception exception);
 
     [LoggerMessage(
-        EventId = 10,
+    EventId = 410,
         Level = LogLevel.Warning,
         Message = "Failed to build configured user root path for user {UserId} using base path {BasePath}")]
     public static partial void LogUserRootPathBuildFailed(

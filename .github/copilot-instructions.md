@@ -74,6 +74,12 @@ Single ASP.NET Core 10 minimal API hosting authentication, synchronization, and 
   MyServiceLoggers.LogItemProcessing(logger, itemId, null);
   ```
 - Benefits: compile-time safety, better performance, consistent structured logging
+- **EventId assignment:** keep `EventId` values unique across all logger classes. Reserve non-overlapping ranges:
+  - `FileServiceLoggers`: 101-199
+  - `FileSystemScannerLoggers`: 201-299
+  - `FileSystemWatcherHostedServiceLoggers`: 301-399
+  - `RootFolderSynchronizationLoggers`: 401-499
+  - Allocate a dedicated, unused range when creating additional logger classes.
 
 ## Configuration & Integrations
 
