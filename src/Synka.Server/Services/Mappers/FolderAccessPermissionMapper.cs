@@ -2,7 +2,7 @@ using System;
 using Synka.Server.Contracts;
 using Synka.Server.Data.Entities;
 
-namespace Synka.Server.Services;
+namespace Synka.Server.Services.Mappers;
 
 internal static class FolderAccessPermissionMapper
 {

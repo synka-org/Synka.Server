@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Synka.Server.Contracts;
 using Synka.Server.Data;
 using Synka.Server.Data.Entities;
+using Synka.Server.Services.Mappers;
 
 namespace Synka.Server.Services;
 
