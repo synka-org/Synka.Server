@@ -265,4 +265,5 @@ internal static partial class FileSystemWatcherHostedServiceLoggers
         Guid userId,
         string physicalPath,
         Exception? exception);
+
 }

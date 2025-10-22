@@ -40,6 +40,9 @@ public sealed class FileSystemWatcherHostedService(
         }
 
         using var scope = scopeFactory.CreateScope();
+        var synchronizationService = scope.ServiceProvider.GetRequiredService<IRootFolderSynchronizationService>();
+        await synchronizationService.EnsureRootFoldersAsync(cancellationToken);
+
         await using var dbContext = scope.ServiceProvider.GetRequiredService<SynkaDbContext>();
 
         // Get configured root folders (shared or user-specific) that are not deleted
